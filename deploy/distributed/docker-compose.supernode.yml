@@ -1,0 +1,37 @@
+# SuperNode — runs on each client machine
+# Usage:
+#   PARTITION_ID=0 NUM_CLIENTS=5 SUPERLINK_IP=172.31.x.x \
+#     docker compose -f docker-compose.supernode.yml up -d
+
+services:
+  supernode:
+    image: healthcare-fl:latest
+    container_name: fl-supernode
+    restart: unless-stopped
+    command: >
+      flower-supernode
+        --root-certificates /certs/ca.pem
+        --superlink ${SUPERLINK_IP}:9092
+        --node-config "partition-id=${PARTITION_ID} num-clients=${NUM_CLIENTS} max-samples=${MAX_SAMPLES:-0}"
+        --clientappio-api-address 0.0.0.0:7070
+    environment:
+      - DATA_PATH=/data/flower_data
+      - MAX_SAMPLES=${MAX_SAMPLES:-0}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./certs:/certs:ro
+      - ./data:/data:ro
+      - ./logs/supernode:/app/logs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+        tag: "supernode-${PARTITION_ID}"

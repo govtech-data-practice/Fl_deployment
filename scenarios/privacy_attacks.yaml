@@ -1,0 +1,7 @@
+name: "Privacy Attack Demo"
+description: "Run gradient inversion and membership inference attacks — with and without DP defense"
+mode: attack
+attacks:
+  - dlg
+  - mia_bilstm
+  - mia_mlp

@@ -1,0 +1,14 @@
+name: "Chest X-ray Production"
+description: "DenseNet-121 on real NIH data (112K images) — 7 strategies, 45 rounds (~8 hours)"
+task: chest
+num_clients: 5
+num_rounds: 45
+synthetic: false
+strategies:
+  - "IID"
+  - "FedProx_Mu0.1_Alpha_0.5"
+  - "FedProx_Mu0.1_Alpha_0.1"
+  - "SCAFFOLD_Alpha_0.5"
+  - "SCAFFOLD_Alpha_0.1"
+  - "SecAgg_Alpha_0.5"
+  - "OneOwner_Alpha_0.5"

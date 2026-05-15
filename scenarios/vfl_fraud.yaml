@@ -1,0 +1,9 @@
+name: "Vertical FL — Multi-Bank Fraud Detection"
+description: "3 banks each hold 10 of 30 features. No bank sees all data. VFL aggregates embeddings."
+task: vfl_fraud
+num_clients: 3
+num_rounds: 5
+strategies:
+  - "IID"
+synthetic: true
+max_samples: 5000

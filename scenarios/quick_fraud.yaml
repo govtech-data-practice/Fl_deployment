@@ -1,0 +1,9 @@
+name: "Quick Fraud Demo"
+description: "30-second FedAvg on synthetic fraud data — your first FL experiment"
+task: fraud
+num_clients: 3
+num_rounds: 3
+strategies:
+  - "IID"
+synthetic: true
+max_samples: 2000

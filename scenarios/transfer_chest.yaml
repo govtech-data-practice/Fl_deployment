@@ -1,0 +1,9 @@
+name: "Transfer Learning — Chest X-ray"
+description: "Compare FL with pretrained DenseNet (ImageNet) vs random init. Transfer learning accelerates convergence."
+task: chest
+num_clients: 3
+num_rounds: 5
+strategies:
+  - "IID"
+synthetic: true
+max_samples: 500

@@ -1,0 +1,10 @@
+name: "Quick Sepsis Demo"
+description: "1-minute FedAvg on synthetic sepsis time-series data"
+task: sepsis
+input_dim: 14
+num_clients: 3
+num_rounds: 5
+strategies:
+  - "IID"
+synthetic: true
+max_samples: 2000

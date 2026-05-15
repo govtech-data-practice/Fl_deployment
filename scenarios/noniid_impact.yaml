@@ -1,0 +1,15 @@
+name: "Non-IID Impact Analysis"
+description: "How data heterogeneity affects FL — sweep alpha from 1.0 (mild) to 0.1 (extreme)"
+task: fraud
+num_clients: 5
+num_rounds: 10
+strategies:
+  - "IID"
+  - "FedProx_Mu0.1_Alpha_1.0"
+  - "FedProx_Mu0.1_Alpha_0.5"
+  - "FedProx_Mu0.1_Alpha_0.1"
+  - "SCAFFOLD_Alpha_1.0"
+  - "SCAFFOLD_Alpha_0.5"
+  - "SCAFFOLD_Alpha_0.1"
+synthetic: true
+max_samples: 5000

@@ -1,0 +1,33 @@
+name: "Full Benchmark"
+description: "All 4 tasks with key strategies — comprehensive FL evaluation (~2-3 hours)"
+num_clients: 5
+num_rounds: 20
+experiments:
+  - task: sepsis
+    input_dim: 14
+    strategies:
+      - "IID"
+      - "FedProx_Mu0.1_Alpha_0.5"
+      - "SCAFFOLD_Alpha_0.5"
+      - "SecAgg_Alpha_0.5"
+      - "DP_Central_Eps50.0_Alpha_0.5"
+  - task: ecg
+    input_dim: 12
+    strategies:
+      - "IID"
+      - "FedProx_Mu0.1_Alpha_0.5"
+      - "SCAFFOLD_Alpha_0.5"
+  - task: fraud
+    strategies:
+      - "IID"
+      - "FedProx_Mu0.1_Alpha_0.5"
+      - "SCAFFOLD_Alpha_0.5"
+      - "SecAgg_Alpha_0.5"
+      - "DP_Central_Eps50.0_Alpha_0.5"
+  - task: chest
+    synthetic: true
+    max_samples: 500
+    num_rounds: 5
+    strategies:
+      - "IID"
+      - "SCAFFOLD_Alpha_0.5"

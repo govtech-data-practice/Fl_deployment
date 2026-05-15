@@ -1,0 +1,12 @@
+name: "Strategy Showdown"
+description: "Compare FedAvg, FedProx, SCAFFOLD, SecAgg on non-IID fraud data (~10 min)"
+task: fraud
+num_clients: 5
+num_rounds: 10
+strategies:
+  - "IID"
+  - "FedProx_Mu0.1_Alpha_0.5"
+  - "SCAFFOLD_Alpha_0.5"
+  - "SecAgg_Alpha_0.5"
+synthetic: true
+max_samples: 5000

@@ -1,0 +1,9 @@
+name: "Split Learning — Sepsis Prediction"
+description: "Clients keep LSTM encoder private, only share classifier weights. Raw data never leaves the client."
+task: split_sepsis
+num_clients: 5
+num_rounds: 5
+strategies:
+  - "IID"
+synthetic: true
+max_samples: 2000

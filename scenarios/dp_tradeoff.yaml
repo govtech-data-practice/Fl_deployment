@@ -1,0 +1,13 @@
+name: "DP Privacy-Utility Tradeoff"
+description: "Sweep differential privacy noise levels — see how privacy budget affects accuracy"
+task: sepsis
+input_dim: 14
+num_clients: 5
+num_rounds: 15
+strategies:
+  - "IID"
+  - "DP_Central_Eps50.0_Alpha_0.5"
+  - "DP_Central_Eps10.0_Alpha_0.5"
+  - "DP_Central_Eps1.0_Alpha_0.5"
+synthetic: true
+max_samples: 2000

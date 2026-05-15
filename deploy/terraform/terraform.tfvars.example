@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in
+region              = "ap-southeast-1"
+project_name        = "healthcare-fl"
+key_name            = "your-key-pair-name"
+data_s3_bucket      = "your-bucket-name"
+data_s3_prefix      = "flower_data/"   # sepsis NPZ files
+task                = "sepsis"          # or "chest_xray"
+num_supernodes      = 5
+use_gpu             = false             # true for g4dn.xlarge
+enable_tls          = true
+allowed_ssh_cidrs   = ["203.0.113.0/32"] # your IP
+experiment          = "IID"
+num_rounds          = 100

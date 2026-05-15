@@ -1,0 +1,26 @@
+# SuperLink — runs on FL_deployment server
+# Usage: docker compose -f docker-compose.superlink.yml up -d
+
+services:
+  superlink:
+    image: healthcare-fl:latest
+    container_name: fl-superlink
+    restart: unless-stopped
+    command: >
+      flower-superlink
+        --ssl-certfile /certs/server.pem
+        --ssl-keyfile /certs/server.key
+        --ssl-ca-certfile /certs/ca.pem
+    ports:
+      - "9091:9091"
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - ./certs:/certs:ro
+      - ./logs/superlink:/app/logs
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+        tag: "superlink"
