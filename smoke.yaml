@@ -1,0 +1,22 @@
+name: "Smoke Test"
+description: >
+  Minimal FL smoke test — verifies the full pipeline (data loading, training,
+  aggregation, evaluation) with synthetic data in under 60 seconds.
+  Use this as the first validation step after installation or deployment.
+
+task: fraud
+num_clients: 2
+num_rounds: 3
+strategies:
+  - "IID"
+synthetic: true
+max_samples: 500
+
+# DP defaults to DP_STRONG (fail-closed) when not specified.
+# Uncomment to override:
+# dp_preset: DP_STRONG
+# dp_preset: DP_MODERATE
+# dp_preset: DP_RELAXED
+
+# SecAgg is enabled by default in distributed mode.
+# secagg: true

@@ -16,3 +16,8 @@ flower_data/
 .venv/
 .claude/
 node_modules/
+cluster.env
+env.yaml
+configs/*.local.yaml
+runs/
+!runs/.gitkeep

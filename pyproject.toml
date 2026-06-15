@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fl-reference"
+version = "0.1.0"
+description = "Federated Learning reference implementation with privacy-enhancing technologies"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26,<2",
+    "flwr[simulation]>=1.30,<2",
+    "scikit-learn>=1.5",
+    "pandas>=2.0",
+    "pillow>=10.0",
+    "PyYAML>=6.0",
+    "torch>=2.2",
+    "torchvision>=0.17",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+pets = [
+    "tenseal>=0.3",
+    "transformers>=4.40",
+    "peft>=0.10",
+    "accelerate>=0.30",
+    "bitsandbytes>=0.43",
+]
+all = [
+    "fl-reference[dev]",
+    "fl-reference[pets]",
+]
+
+[project.scripts]
+validate-manifest = "validate_manifest:main"
+dp-budget = "dp_budget:main"
+
+[tool.setuptools.packages.find]
+include = [
+    "fl_common*",
+    "models*",
+    "tasks*",
+    "privacy*",
+    "secure_inference*",
+    "serverapp*",
+    "clientapp*",
+    "secagg*",
+    "psi*",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

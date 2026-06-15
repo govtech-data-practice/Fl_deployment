@@ -1,0 +1,48 @@
+# FL Platform — Staging Environment
+# ===================================
+# Multi-node staging with synthetic or representative data.
+# Mirrors production topology at reduced scale.
+
+server:
+  host: ""              # Fill in staging server IP
+  private_ip: ""
+  instance_type: g6.4xlarge
+  memory: 56g
+  cpus: 14
+  shm_size: 4g
+
+clients:
+  hosts: []             # Fill in staging client IPs
+  num_clients: 2
+  instance_type: g6.2xlarge
+  memory: 28g
+  cpus: 8
+
+tls:
+  certs_dir: /home/ec2-user/fl-deploy/certs
+  cert_days: 90         # Shorter validity for staging
+  cert_cn: fl-coordinator-staging
+
+network:
+  grpc_port: 9092
+  vpc_id: ""
+  subnet_id: ""
+
+docker:
+  image: healthcare-fl
+  tag: ""               # Use specific version tag
+  registry: ""
+
+training:
+  timeout_default: 3600
+  round_timeout: 120
+
+privacy:
+  dp_preset: DP_STRONG
+  secagg: true
+
+monitoring:
+  log_driver: awslogs
+
+aws:
+  region: ap-southeast-1

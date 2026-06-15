@@ -1,0 +1,40 @@
+# FL Platform — Development Environment
+# ======================================
+# Local/single-machine development configuration.
+# Use with: python run_ec2.py <task> --config configs/dev.yaml
+
+server:
+  host: localhost
+  private_ip: 127.0.0.1
+  instance_type: local
+  memory: 8g
+  cpus: 4
+  shm_size: 2g
+
+clients:
+  hosts: [localhost]
+  num_clients: 2
+  instance_type: local
+  memory: 4g
+  cpus: 2
+
+tls:
+  enabled: false    # TLS disabled for local dev
+
+network:
+  grpc_port: 9092
+
+docker:
+  image: healthcare-fl
+  tag: dev
+
+training:
+  timeout_default: 300
+  round_timeout: 60
+
+privacy:
+  dp_preset: DP_STRONG
+  secagg: false     # SecAgg not needed for single-machine simulation
+
+monitoring:
+  log_driver: json-file

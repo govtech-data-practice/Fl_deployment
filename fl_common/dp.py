@@ -131,3 +131,33 @@ class PrivacyAccountant:
             f"PrivacyAccountant(σ={self.noise_multiplier}, q={self.sample_rate}, "
             f"steps={self.steps}, ε={self.get_epsilon():.2f}, δ={self.delta})"
         )
+
+
+# ======================================================================
+# Named DP Presets
+# ======================================================================
+
+DP_PRESETS = {
+    "DP_STRONG":   {"sigma": 1.5, "C": 1.0},   # ~ε≈4  @ 100 rounds (δ=1e-5)
+    "DP_MODERATE": {"sigma": 0.8, "C": 1.0},   # ~ε≈10 @ 100 rounds (δ=1e-5)
+    "DP_RELAXED":  {"sigma": 0.5, "C": 1.0},   # ~ε≈25 @ 100 rounds (δ=1e-5)
+}
+
+DEFAULT_DP_PRESET = "DP_STRONG"
+
+
+def get_dp_config(preset_name: str = None) -> dict:
+    """Return DP configuration for a named preset.
+
+    If preset_name is None or unrecognised, fails closed to DP_STRONG.
+    """
+    if preset_name is None:
+        logger.info("No DP preset specified — fail-closed to %s", DEFAULT_DP_PRESET)
+        preset_name = DEFAULT_DP_PRESET
+    preset_name = preset_name.upper()
+    if preset_name not in DP_PRESETS:
+        logger.warning("Unknown DP preset '%s' — fail-closed to %s", preset_name, DEFAULT_DP_PRESET)
+        preset_name = DEFAULT_DP_PRESET
+    cfg = DP_PRESETS[preset_name].copy()
+    cfg["preset"] = preset_name
+    return cfg

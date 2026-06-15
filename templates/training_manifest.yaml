@@ -1,0 +1,41 @@
+# Training Manifest Template
+# ==========================
+# Configuration snapshot captured at the start of each training run.
+# Stored with run records for full provenance tracking.
+
+run_id: ""
+started_at: ""                # ISO 8601
+environment: ""               # dev | staging | production
+
+task:
+  name: ""
+  model: ""
+  loss_function: ""
+  optimiser: ""
+  batch_size: 32
+  local_epochs: 1
+  total_rounds: 100
+  convergence_criteria: ""    # e.g. "val_loss < 0.01 for 5 rounds"
+
+privacy:
+  dp_preset: DP_STRONG
+  sigma: 1.5
+  max_norm: 1.0
+  delta: 1.0e-5
+  secagg: true
+
+participants:
+  - id: ""
+    manifest_checksum: ""     # SHA-256 of participant's data manifest
+    record_count: 0
+
+aggregation:
+  strategy: FedAvg
+  min_clients: 2
+  fraction_fit: 1.0
+
+infrastructure:
+  coordinator_instance: ""
+  client_instances: []
+  docker_image: ""
+  docker_tag: ""

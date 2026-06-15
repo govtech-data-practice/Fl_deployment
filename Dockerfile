@@ -1,8 +1,22 @@
 FROM python:3.12-slim
 
-# Pin torch+cu124 for CUDA 12.8 host driver compatibility
-RUN pip install --no-cache-dir "numpy<2" "flwr[simulation]>=1.13" scikit-learn pandas pillow pyyaml && \
-    pip install --no-cache-dir torch==2.5.1+cu124 torchvision==0.20.1+cu124 \
+# All dependencies pinned to exact versions (verified 2026-05-25)
+# torch+cu124 requires CUDA 12.4+ host driver (tested: NVIDIA 595.71.05)
+RUN pip install --no-cache-dir \
+    numpy==1.26.4 \
+    "flwr[simulation]==1.30.0" \
+    scikit-learn==1.8.0 \
+    pandas==3.0.3 \
+    pillow==12.2.0 \
+    PyYAML==6.0.3 \
+    tenseal==0.3.16 \
+    transformers \
+    peft \
+    accelerate \
+    bitsandbytes \
+    && pip install --no-cache-dir \
+    torch==2.5.1+cu124 \
+    torchvision==0.20.1+cu124 \
     --extra-index-url https://download.pytorch.org/whl/cu124
 
 WORKDIR /app
@@ -12,7 +26,14 @@ COPY tasks/ /app/tasks/
 COPY privacy/ /app/privacy/
 COPY experiments/ /app/experiments/
 COPY scenarios/ /app/scenarios/
-COPY run_tests.py run_all.py run_ec2.py /app/
+COPY secure_inference/ /app/secure_inference/
+COPY serverapp/ /app/serverapp/
+COPY clientapp/ /app/clientapp/
+COPY secagg/ /app/secagg/
+COPY psi/ /app/psi/
+COPY scripts/ /app/scripts/
+COPY run_tests.py run_all.py run_ec2.py run_client.py ingest.py /app/
+COPY validate_manifest.py dp_budget.py /app/
 
 # List available models and scenarios at build time
 RUN echo "Models: bilstm, mlp, densenet, mistral, vfl_mlp, split_bilstm" && \
