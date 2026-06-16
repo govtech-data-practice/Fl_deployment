@@ -12,17 +12,21 @@ Usage:
 import importlib
 
 MODEL_REGISTRY = {
-    "autoencoder":   "models.autoencoder.client_app",
-    "bilstm":        "models.bilstm.client_app",
-    "cnn1d":         "models.cnn1d.client_app",
-    "densenet":      "models.densenet.client_app",
-    "generic":       "models.generic.client_app",
-    "logreg":        "models.logreg.client_app",
-    "mlp":           "models.mlp.client_app",
-    "resnet_small":  "models.resnet_small.client_app",
-    "split_bilstm":  "models.split_bilstm.client_app",
-    "tabnet_simple": "models.tabnet_simple.client_app",
-    "vfl_mlp":       "models.vfl_mlp.client_app",
+    # HFL
+    "autoencoder":   "models.hfl.autoencoder.client_app",
+    "bilstm":        "models.hfl.bilstm.client_app",
+    "cnn1d":         "models.hfl.cnn1d.client_app",
+    "densenet":      "models.hfl.densenet.client_app",
+    "generic":       "models.hfl.generic.client_app",
+    "logreg":        "models.hfl.logreg.client_app",
+    "mlp":           "models.hfl.mlp.client_app",
+    "resnet_small":  "models.hfl.resnet_small.client_app",
+    "tabnet_simple": "models.hfl.tabnet_simple.client_app",
+    # VFL
+    "split_bilstm":  "models.vfl.split_bilstm.client_app",
+    "vfl_mlp":       "models.vfl.vfl_mlp.client_app",
+    # LLM
+    "olmo":          "models.llm.olmo.client_app",
 }
 
 

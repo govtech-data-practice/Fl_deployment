@@ -76,20 +76,20 @@ def main():
     if target in ("sepsis", "all"):
         os.environ["TASK"] = "sepsis"
         os.environ["INPUT_DIM"] = "14"
-        from models.bilstm.server_app import make_strategy as sepsis_strat
-        from models.bilstm.client_app import client_fn as sepsis_cfn
+        from models.hfl.bilstm.server_app import make_strategy as sepsis_strat
+        from models.hfl.bilstm.client_app import client_fn as sepsis_cfn
         all_results["sepsis"] = run_suite("Sepsis (BiLSTM)",
             lambda s, nc: sepsis_strat(s, nc, 14), sepsis_cfn, num_rounds=3)
 
     if target in ("chest", "all"):
         os.environ.setdefault("SYNTHETIC", "1")
-        from models.densenet.server_app import make_strategy as chest_strat
-        from models.densenet.client_app import client_fn as chest_cfn
+        from models.hfl.densenet.server_app import make_strategy as chest_strat
+        from models.hfl.densenet.client_app import client_fn as chest_cfn
         all_results["chest_xray"] = run_suite("Chest X-ray (DenseNet-121)", chest_strat, chest_cfn, num_rounds=2)
 
     if target in ("fraud", "all"):
-        from models.mlp.server_app import make_strategy as fraud_strat
-        from models.mlp.client_app import client_fn as fraud_cfn
+        from models.hfl.mlp.server_app import make_strategy as fraud_strat
+        from models.hfl.mlp.client_app import client_fn as fraud_cfn
         all_results["fraud"] = run_suite("Fraud (MLP)", fraud_strat, fraud_cfn, num_rounds=3)
 
     # Summary

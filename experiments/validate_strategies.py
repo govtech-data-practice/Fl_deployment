@@ -90,12 +90,12 @@ def test_task(name, make_strat, cfn, metric_key):
 def main():
     os.environ["TASK"] = "sepsis"
     os.environ["INPUT_DIM"] = "14"
-    from models.bilstm.server_app import make_strategy as s_strat
-    from models.bilstm.client_app import client_fn as s_cfn
-    from models.densenet.server_app import make_strategy as c_strat
-    from models.densenet.client_app import client_fn as c_cfn
-    from models.mlp.server_app import make_strategy as f_strat
-    from models.mlp.client_app import client_fn as f_cfn
+    from models.hfl.bilstm.server_app import make_strategy as s_strat
+    from models.hfl.bilstm.client_app import client_fn as s_cfn
+    from models.hfl.densenet.server_app import make_strategy as c_strat
+    from models.hfl.densenet.client_app import client_fn as c_cfn
+    from models.hfl.mlp.server_app import make_strategy as f_strat
+    from models.hfl.mlp.client_app import client_fn as f_cfn
 
     t0 = time.time()
     sepsis_r = test_task("SEPSIS (BiLSTM)", lambda n, nc: s_strat(n, nc, 14), s_cfn, "accuracy")

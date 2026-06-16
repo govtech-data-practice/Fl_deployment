@@ -65,8 +65,14 @@ fl-reference/
   serverapp/          Coordinator (ServerApp) facade
   clientapp/          Client (ClientApp) facade
   fl_common/          Shared FL library (strategies, DP, SecAgg, data pipeline)
-  models/             Model implementations (13 architectures)
-  tasks/              Task/data definitions (12 tasks)
+  models/
+    hfl/              Horizontal FL models (MLP, BiLSTM, DenseNet, CNN1D, etc.)
+    vfl/              Vertical FL & Split Learning (VFL MLP, Split BiLSTM)
+    ftl/              Federated Transfer Learning (re-exports HFL/DenseNet)
+    llm/              LLM fine-tuning (Mistral QLoRA, OLMo LoRA)
+  tasks/
+    hfl/              HFL data tasks (fraud, sepsis, ECG, chest X-ray, etc.)
+    llm/              LLM data tasks (gov_doc, gov_llm)
   privacy/            Privacy attack suite and DP testing
   secagg/             Secure aggregation configuration
   psi/                Private Set Intersection (entity alignment for VFL)

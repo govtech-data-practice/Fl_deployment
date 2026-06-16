@@ -5,14 +5,17 @@ FL + PET Sandbox — EC2 Runner
 Run federated learning experiments from CLI or YAML scenarios.
 
 Usage:
-  python run_ec2.py                           # all tasks (production)
-  python run_ec2.py sepsis                    # single task
+  python run_ec2.py                           # all tasks (simulation)
+  python run_ec2.py sepsis                    # single task (simulation)
+  python run_ec2.py --distributed             # all tasks (distributed via SuperLink)
+  python run_ec2.py --distributed sepsis      # single task (distributed)
   python run_ec2.py scenarios/quick_fraud.yaml  # YAML scenario
   python run_ec2.py privacy                   # privacy attack suite
 """
 
 import sys, os, time, json, logging
 from datetime import datetime
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                     format="%(asctime)s | %(message)s")
@@ -23,15 +26,34 @@ sys.path.insert(0, ROOT)
 
 import torch
 import numpy as np
-from flwr.server import ServerApp, ServerConfig, ServerAppComponents
+from flwr.server import ServerApp, ServerConfig, ServerAppComponents, start_server
 from flwr.simulation import run_simulation
-from flwr.clientapp import ClientApp
+from flwr.client import ClientApp
 from flwr.common import Context
+
+# ── Mode Configuration ───────────────────────────────────────────────
+DISTRIBUTED = "--distributed" in sys.argv or os.environ.get("FL_DISTRIBUTED", "") == "1"
+if DISTRIBUTED:
+    sys.argv = [a for a in sys.argv if a != "--distributed"]
 
 # ── Scale Configuration ──────────────────────────────────────────────
 # 5 clients = 5 hospitals/agencies, realistic for cross-silo FL
 NC = 5
 GPU_PER_CLIENT = 0.2 if torch.cuda.is_available() else 0.0
+
+# ── TLS Configuration (distributed mode) ─────────────────────────────
+SUPERLINK_ADDRESS = os.environ.get("SUPERLINK_ADDRESS", "0.0.0.0:9092")
+CERTS_DIR = os.environ.get("CERTS_DIR", "/certs")
+
+def _load_certificates():
+    """Load TLS certificates for distributed mode."""
+    ca = Path(CERTS_DIR) / "ca.pem"
+    cert = Path(CERTS_DIR) / "server.pem"
+    key = Path(CERTS_DIR) / "server.key"
+    if ca.exists() and cert.exists() and key.exists():
+        return (ca.read_bytes(), cert.read_bytes(), key.read_bytes())
+    logger.warning("TLS certs not found in %s — running insecure", CERTS_DIR)
+    return None
 
 # Strategy configs: name → (num_rounds, description)
 STRATEGIES = {
@@ -43,8 +65,10 @@ STRATEGIES = {
     "SCAFFOLD_Alpha_0.5": (30, "SCAFFOLD moderate non-IID"),
     "SCAFFOLD_Alpha_0.1": (40, "SCAFFOLD extreme non-IID"),
     "SecAgg_Alpha_0.5": (30, "SecAgg+ moderate non-IID"),
-    "DP_Central_Eps50.0_Alpha_0.5": (30, "DP epsilon=50 moderate"),
-    "DP_Central_Eps10.0_Alpha_0.5": (40, "DP epsilon=10 moderate"),
+    "DP_Central_Eps50.0_Alpha_0.5": (30, "DP Central epsilon=50"),
+    "DP_Central_Eps10.0_Alpha_0.5": (40, "DP Central epsilon=10"),
+    "DP_Local_Eps50.0_Alpha_0.5": (30, "DP Local epsilon=50"),
+    "DP_Local_Eps10.0_Alpha_0.5": (40, "DP Local epsilon=10"),
     "OneOwner_Alpha_0.5": (30, "Single-owner model distribution"),
 }
 
@@ -72,7 +96,7 @@ TASK_CONFIG = {
         "rounds_mult": 1.5,      # DenseNet needs more rounds
         "max_samples": 0,
         "metric": "auc",
-        # Skip heavy strategies on DenseNet (too slow for DP, FedAdam diverges)
+        # Skip DP on DenseNet (8M params — noise destroys signal)
         "strategies": [
             "IID",
             "FedProx_Mu0.1_Alpha_0.5",
@@ -82,6 +106,51 @@ TASK_CONFIG = {
             "SecAgg_Alpha_0.5",
             "OneOwner_Alpha_0.5",
         ],
+    },
+    # ── New tasks ────────────────────────────────────────────────────
+    "anomaly": {
+        "rounds_mult": 1.0,
+        "max_samples": 8000,
+        "metric": "auc",
+        "strategies": list(STRATEGIES.keys()),
+    },
+    "mortality": {
+        "rounds_mult": 1.0,
+        "max_samples": 6000,
+        "metric": "accuracy",
+        "strategies": list(STRATEGIES.keys()),
+    },
+    "drug": {
+        "rounds_mult": 1.0,
+        "max_samples": 5000,
+        "metric": "accuracy",
+        "strategies": list(STRATEGIES.keys()),
+    },
+    "satellite": {
+        "rounds_mult": 1.0,
+        "max_samples": 3000,
+        "metric": "accuracy",
+        "strategies": [
+            "IID",
+            "FedProx_Mu0.1_Alpha_0.5",
+            "FedProx_Mu0.1_Alpha_0.1",
+            "SCAFFOLD_Alpha_0.5",
+            "SCAFFOLD_Alpha_0.1",
+            "SecAgg_Alpha_0.5",
+            "OneOwner_Alpha_0.5",
+        ],
+    },
+    "readmission": {
+        "rounds_mult": 1.0,
+        "max_samples": 6000,
+        "metric": "accuracy",
+        "strategies": list(STRATEGIES.keys()),
+    },
+    "olmo": {
+        "rounds_mult": 0.5,      # fewer rounds for LLM
+        "max_samples": 200,
+        "metric": "perplexity",
+        "strategies": ["IID", "FedProx_Mu0.1_Alpha_0.5", "OneOwner_Alpha_0.5"],
     },
 }
 
@@ -123,17 +192,31 @@ def run_fl(make_strat, client_fn, strat_name, metric_key, num_rounds, gpu=0.0, n
     nc = num_clients or NC
     cap = MetricCapture(make_strat(strat_name, nc), metric_key)
 
-    def sf(ctx):
-        return ServerAppComponents(strategy=cap, config=ServerConfig(num_rounds=num_rounds))
-
     t0 = time.time()
     try:
-        run_simulation(
-            server_app=ServerApp(server_fn=sf),
-            client_app=ClientApp(client_fn=client_fn),
-            num_supernodes=nc,
-            backend_config={"client_resources": {"num_cpus": 2, "num_gpus": gpu}},
-        )
+        if DISTRIBUTED:
+            # Distributed mode: this process IS the FL server.
+            # SuperNodes (on client EC2s) connect to this server directly.
+            # The SuperLink container must be stopped first — this takes over port 9092.
+            certs = _load_certificates()
+            logger.info("    [DISTRIBUTED] Starting FL server on %s (%d clients expected)",
+                        SUPERLINK_ADDRESS, nc)
+            start_server(
+                server_address=SUPERLINK_ADDRESS,
+                config=ServerConfig(num_rounds=num_rounds, round_timeout=120),
+                strategy=cap,
+                certificates=certs,
+            )
+        else:
+            # Simulation mode: everything runs locally
+            def sf(ctx):
+                return ServerAppComponents(strategy=cap, config=ServerConfig(num_rounds=num_rounds))
+            run_simulation(
+                server_app=ServerApp(server_fn=sf),
+                client_app=ClientApp(client_fn=client_fn),
+                num_supernodes=nc,
+                backend_config={"client_resources": {"num_cpus": 2, "num_gpus": gpu}},
+            )
         return cap.val, cap.history, time.time() - t0
     except Exception as e:
         logger.error("  ERROR: %s" % e)
@@ -148,8 +231,8 @@ def run_sepsis():
     logger.info("=" * 70)
     os.environ["TASK"] = "sepsis"
     os.environ["INPUT_DIM"] = "14"
-    from models.bilstm.server_app import make_strategy
-    from models.bilstm.client_app import client_fn
+    from models.hfl.bilstm.server_app import make_strategy
+    from models.hfl.bilstm.client_app import client_fn
 
     cfg = TASK_CONFIG["sepsis"]
     results = {}
@@ -172,8 +255,8 @@ def run_ecg():
     os.environ["TASK"] = "ecg"
     os.environ["INPUT_DIM"] = "12"
     os.environ["MAX_SAMPLES"] = str(TASK_CONFIG["ecg"]["max_samples"])
-    from models.bilstm.server_app import make_strategy
-    from models.bilstm.client_app import client_fn
+    from models.hfl.bilstm.server_app import make_strategy
+    from models.hfl.bilstm.client_app import client_fn
 
     cfg = TASK_CONFIG["ecg"]
     results = {}
@@ -194,8 +277,8 @@ def run_fraud():
     logger.info("  FRAUD — MLP (input_dim=30, 50K synthetic transactions)")
     logger.info("=" * 70)
     os.environ["MAX_SAMPLES"] = str(TASK_CONFIG["fraud"]["max_samples"])
-    from models.mlp.server_app import make_strategy
-    from models.mlp.client_app import client_fn
+    from models.hfl.mlp.server_app import make_strategy
+    from models.hfl.mlp.client_app import client_fn
 
     cfg = TASK_CONFIG["fraud"]
     results = {}
@@ -214,8 +297,8 @@ def run_chest():
     logger.info("  CHEST X-RAY — DenseNet-121 (14 pathologies, real NIH data)")
     logger.info("=" * 70)
     os.environ["SYNTHETIC"] = "0"
-    from models.densenet.server_app import make_strategy
-    from models.densenet.client_app import client_fn
+    from models.hfl.densenet.server_app import make_strategy
+    from models.hfl.densenet.client_app import client_fn
 
     cfg = TASK_CONFIG["chest"]
     results = {}
@@ -226,6 +309,190 @@ def run_chest():
         val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr, GPU_PER_CLIENT)
         results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
         logger.info(f"    Final auc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_vfl():
+    logger.info("\n" + "=" * 70)
+    logger.info("  VFL FRAUD — Vertical FL (3 banks, 10 features each)")
+    logger.info("=" * 70)
+    from models.vfl.vfl_mlp.server_app import make_strategy
+    from models.vfl.vfl_mlp.client_app import client_fn
+
+    results = {}
+    strats = ["IID", "FedProx_Mu0.1_Alpha_0.5", "SCAFFOLD_Alpha_0.5", "SecAgg_Alpha_0.5"]
+    for s in strats:
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] 20 rounds, 3 clients (vertical)")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, "accuracy", 20, num_clients=3)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_split():
+    logger.info("\n" + "=" * 70)
+    logger.info("  SPLIT LEARNING — BiLSTM (LSTM private, classifier shared)")
+    logger.info("=" * 70)
+    os.environ["INPUT_DIM"] = "14"
+    from models.vfl.split_bilstm.server_app import make_strategy
+    from models.vfl.split_bilstm.client_app import client_fn
+
+    results = {}
+    strats = ["IID", "FedProx_Mu0.1_Alpha_0.5", "SCAFFOLD_Alpha_0.5"]
+    for s in strats:
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] 30 rounds, 5 clients (split)")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, "accuracy", 30)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_transfer():
+    logger.info("\n" + "=" * 70)
+    logger.info("  TRANSFER LEARNING — DenseNet pretrained vs random init")
+    logger.info("=" * 70)
+    os.environ["SYNTHETIC"] = "1"
+    from models.hfl.densenet.server_app import make_strategy
+    from models.hfl.densenet.client_app import client_fn
+
+    results = {}
+    # Both use IID, compare pretrained=True (default) vs pretrained=False
+    for mode in ["pretrained", "random_init"]:
+        if mode == "random_init":
+            os.environ["PRETRAINED"] = "0"
+        else:
+            os.environ.pop("PRETRAINED", None)
+        lab = f"IID_{mode}"
+        logger.info(f"\n  [{lab}] 10 rounds, 3 clients")
+        val, hist, dt = run_fl(make_strategy, client_fn, "IID", "auc", 10, num_clients=3)
+        results[mode] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final auc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+# ── New task runners ────────────────────────────────────────────────
+
+def run_anomaly():
+    logger.info("\n" + "=" * 70)
+    logger.info("  ANOMALY — Autoencoder (input_dim=40, synthetic network traffic)")
+    logger.info("=" * 70)
+    from models.hfl.autoencoder.server_app import make_strategy
+    from models.hfl.autoencoder.client_app import client_fn
+
+    cfg = TASK_CONFIG["anomaly"]
+    results = {}
+    for s in cfg["strategies"]:
+        nr = int(STRATEGIES[s][0] * cfg["rounds_mult"])
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] {STRATEGIES[s][1]} — {nr} rounds")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_mortality():
+    logger.info("\n" + "=" * 70)
+    logger.info("  MORTALITY — TabNet (input_dim=25, synthetic ICU data)")
+    logger.info("=" * 70)
+    from models.hfl.tabnet_simple.server_app import make_strategy
+    from models.hfl.tabnet_simple.client_app import client_fn
+
+    cfg = TASK_CONFIG["mortality"]
+    results = {}
+    for s in cfg["strategies"]:
+        nr = int(STRATEGIES[s][0] * cfg["rounds_mult"])
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] {STRATEGIES[s][1]} — {nr} rounds")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_drug():
+    logger.info("\n" + "=" * 70)
+    logger.info("  DRUG — Generic MLP (input_dim=200, synthetic molecular fingerprints)")
+    logger.info("=" * 70)
+    os.environ["GENERIC_INPUT_DIM"] = "200"
+    os.environ["GENERIC_NUM_CLASSES"] = "2"
+    os.environ["GENERIC_TASK_TYPE"] = "binary"
+    os.environ["GENERIC_MODEL"] = "mlp"
+    os.environ["GENERIC_HIDDEN"] = "128"
+    os.environ["GENERIC_DATA_MODULE"] = "tasks.drug.data"
+    from models.hfl.generic.server_app import make_strategy
+    from models.hfl.generic.client_app import client_fn
+
+    cfg = TASK_CONFIG["drug"]
+    os.environ["MAX_SAMPLES"] = str(cfg["max_samples"])
+    results = {}
+    for s in cfg["strategies"]:
+        nr = int(STRATEGIES[s][0] * cfg["rounds_mult"])
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] {STRATEGIES[s][1]} — {nr} rounds")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_satellite():
+    logger.info("\n" + "=" * 70)
+    logger.info("  SATELLITE — ResNet-small (64x64x3, 5-class land use)")
+    logger.info("=" * 70)
+    from models.hfl.resnet_small.server_app import make_strategy
+    from models.hfl.resnet_small.client_app import client_fn
+
+    cfg = TASK_CONFIG["satellite"]
+    results = {}
+    for s in cfg["strategies"]:
+        nr = int(STRATEGIES[s][0] * cfg["rounds_mult"])
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] {STRATEGIES[s][1]} — {nr} rounds")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr, GPU_PER_CLIENT)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_readmission():
+    logger.info("\n" + "=" * 70)
+    logger.info("  READMISSION — LogReg (input_dim=20, synthetic hospital data)")
+    logger.info("=" * 70)
+    from models.hfl.logreg.server_app import make_strategy
+    from models.hfl.logreg.client_app import client_fn
+
+    cfg = TASK_CONFIG["readmission"]
+    results = {}
+    for s in cfg["strategies"]:
+        nr = int(STRATEGIES[s][0] * cfg["rounds_mult"])
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] {STRATEGIES[s][1]} — {nr} rounds")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final acc={val:.4f} ({dt:.0f}s)")
+    return results
+
+
+def run_olmo():
+    logger.info("\n" + "=" * 70)
+    logger.info("  OLMO — Federated LoRA (OLMo-1B, government documents)")
+    logger.info("=" * 70)
+    from models.llm.olmo.server_app import make_strategy
+    from models.llm.olmo.client_app import client_fn
+
+    cfg = TASK_CONFIG["olmo"]
+    os.environ["MAX_SAMPLES"] = str(cfg["max_samples"])
+    results = {}
+    for s in cfg["strategies"]:
+        nr = int(STRATEGIES[s][0] * cfg["rounds_mult"])
+        lab = s.split("_Alpha")[0].split("_Mu")[0]
+        logger.info(f"\n  [{lab}] {STRATEGIES[s][1]} — {nr} rounds")
+        val, hist, dt = run_fl(make_strategy, client_fn, s, cfg["metric"], nr)
+        results[s] = {"label": lab, "value": val, "history": hist, "time": dt}
+        logger.info(f"    Final perplexity={val:.2f} ({dt:.0f}s)")
     return results
 
 
@@ -337,33 +604,33 @@ def _get_make_strategy_and_client_fn(task, input_dim=None):
     if task == "sepsis":
         os.environ["TASK"] = "sepsis"
         os.environ["INPUT_DIM"] = str(input_dim or 14)
-        from models.bilstm.server_app import make_strategy
-        from models.bilstm.client_app import client_fn
+        from models.hfl.bilstm.server_app import make_strategy
+        from models.hfl.bilstm.client_app import client_fn
         idim = input_dim or 14
         return lambda n, nc: make_strategy(n, nc, idim), client_fn
     elif task == "ecg":
         os.environ["TASK"] = "ecg"
         os.environ["INPUT_DIM"] = str(input_dim or 12)
-        from models.bilstm.server_app import make_strategy
-        from models.bilstm.client_app import client_fn
+        from models.hfl.bilstm.server_app import make_strategy
+        from models.hfl.bilstm.client_app import client_fn
         idim = input_dim or 12
         return lambda n, nc: make_strategy(n, nc, idim), client_fn
     elif task == "fraud":
-        from models.mlp.server_app import make_strategy
-        from models.mlp.client_app import client_fn
+        from models.hfl.mlp.server_app import make_strategy
+        from models.hfl.mlp.client_app import client_fn
         return make_strategy, client_fn
     elif task == "chest":
-        from models.densenet.server_app import make_strategy
-        from models.densenet.client_app import client_fn
+        from models.hfl.densenet.server_app import make_strategy
+        from models.hfl.densenet.client_app import client_fn
         return make_strategy, client_fn
     elif task == "vfl_fraud":
-        from models.vfl_mlp.server_app import make_strategy
-        from models.vfl_mlp.client_app import client_fn
+        from models.vfl.vfl_mlp.server_app import make_strategy
+        from models.vfl.vfl_mlp.client_app import client_fn
         return make_strategy, client_fn
     elif task == "split_sepsis":
         os.environ["INPUT_DIM"] = str(input_dim or 14)
-        from models.split_bilstm.server_app import make_strategy
-        from models.split_bilstm.client_app import client_fn
+        from models.vfl.split_bilstm.server_app import make_strategy
+        from models.vfl.split_bilstm.client_app import client_fn
         return make_strategy, client_fn
     else:
         raise ValueError(f"Unknown task: {task}")
@@ -544,10 +811,14 @@ def main():
             is_scenario = True
             target = scenario_path
 
+    mode = "DISTRIBUTED (SuperLink + 5 SuperNodes)" if DISTRIBUTED else "SIMULATION (local)"
     logger.info("=" * 70)
     logger.info("  FL + PET SANDBOX")
+    logger.info(f"  Mode: {mode}")
     logger.info(f"  Target: {target}")
     logger.info(f"  Clients: {NC}")
+    if DISTRIBUTED:
+        logger.info(f"  SuperLink: {SUPERLINK_ADDRESS}")
     logger.info(f"  GPU: {'L4 ' + str(GPU_PER_CLIENT) + '/client' if GPU_PER_CLIENT > 0 else 'CPU only'}")
     logger.info(f"  Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}")
     logger.info("=" * 70)
@@ -582,11 +853,22 @@ def main():
             "ecg": run_ecg,
             "fraud": run_fraud,
             "chest": run_chest,
+            "vfl": run_vfl,
+            "split": run_split,
+            "transfer": run_transfer,
+            "anomaly": run_anomaly,
+            "mortality": run_mortality,
+            "drug": run_drug,
+            "satellite": run_satellite,
+            "readmission": run_readmission,
+            "olmo": run_olmo,
             "privacy": run_privacy,
         }
 
         if target == "all":
-            tasks = ["sepsis", "ecg", "fraud", "chest", "privacy"]
+            tasks = ["fraud", "sepsis", "ecg", "anomaly", "mortality", "drug",
+                     "readmission", "satellite", "chest",
+                     "vfl", "split", "transfer", "privacy"]
         else:
             tasks = [target]
 

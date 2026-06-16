@@ -70,8 +70,8 @@ def test_bilstm_sepsis():
     logger.info("\n--- BiLSTM x Sepsis (input_dim=14) ---")
     os.environ["TASK"] = "sepsis"
     os.environ["INPUT_DIM"] = "14"
-    from models.bilstm.server_app import make_strategy
-    from models.bilstm.client_app import client_fn
+    from models.hfl.bilstm.server_app import make_strategy
+    from models.hfl.bilstm.client_app import client_fn
     results = {}
     for s in STRATS:
         lab = s.split("_Alpha")[0].split("_Mu")[0]
@@ -85,8 +85,8 @@ def test_bilstm_ecg():
     logger.info("\n--- BiLSTM x ECG (input_dim=12) ---")
     os.environ["TASK"] = "ecg"
     os.environ["INPUT_DIM"] = "12"
-    from models.bilstm.server_app import make_strategy
-    from models.bilstm.client_app import client_fn
+    from models.hfl.bilstm.server_app import make_strategy
+    from models.hfl.bilstm.client_app import client_fn
     results = {}
     for s in STRATS:
         lab = s.split("_Alpha")[0].split("_Mu")[0]
@@ -98,8 +98,8 @@ def test_bilstm_ecg():
 
 def test_mlp_fraud():
     logger.info("\n--- MLP x Fraud (input_dim=30) ---")
-    from models.mlp.server_app import make_strategy
-    from models.mlp.client_app import client_fn
+    from models.hfl.mlp.server_app import make_strategy
+    from models.hfl.mlp.client_app import client_fn
     results = {}
     for s in STRATS:
         lab = s.split("_Alpha")[0].split("_Mu")[0]
@@ -112,8 +112,8 @@ def test_mlp_fraud():
 def test_densenet_chest():
     logger.info("\n--- DenseNet x Chest X-ray (synthetic) ---")
     os.environ["SYNTHETIC"] = "1"
-    from models.densenet.server_app import make_strategy
-    from models.densenet.client_app import client_fn
+    from models.hfl.densenet.server_app import make_strategy
+    from models.hfl.densenet.client_app import client_fn
     # Only test FedAvg + SCAFFOLD (DenseNet is slow)
     short_strats = ["IID", "SCAFFOLD_Alpha_0.5"]
     results = {}
@@ -131,7 +131,7 @@ def test_mistral_gov():
         return {"skipped": True}
 
     logger.info("\n--- Mistral x Gov LLM (QLoRA, 3 agencies) ---")
-    from tasks.gov_llm.data import get_all_agency_data, generate_nonmember_data
+    from tasks.llm.gov_llm.data import get_all_agency_data, generate_nonmember_data
     agency_data = get_all_agency_data(num_notes_per_agency=100)
     nonmember = generate_nonmember_data(50)
     logger.info("  Data: 3 agencies x 100 notes + 50 nonmember")
