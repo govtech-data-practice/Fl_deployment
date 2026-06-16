@@ -443,13 +443,22 @@ def build_strategy(
             }
         return fn
 
+    def eval_cfg(alpha_val):
+        def fn(rnd):
+            return {
+                "partition_type": "iid" if alpha_val is None else "label_skew",
+                "alpha": 100.0 if alpha_val is None else alpha_val,
+                "current_round": rnd,
+            }
+        return fn
+
     base = {
         "fraction_fit": 1.0, "fraction_evaluate": 1.0,
         "min_fit_clients": num_clients,
         "min_evaluate_clients": num_clients,
         "min_available_clients": num_clients,
         "evaluate_metrics_aggregation_fn": make_weighted_average(metric_name),
-        "on_evaluate_config_fn": lambda r: {"current_round": r},
+        "on_evaluate_config_fn": eval_cfg(alpha),
     }
 
     if stype in ("IID", "FedAvg"):

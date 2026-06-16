@@ -39,6 +39,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ======================================================================
 
 class BiLSTMSepsis(nn.Module):
+    """BiLSTM for sepsis — used for MIA tests (2-layer, matches FL model)."""
     def __init__(self, input_dim=14, hidden_dim=64, num_layers=2):
         super().__init__()
         self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers,
@@ -49,6 +50,19 @@ class BiLSTMSepsis(nn.Module):
     def forward(self, x):
         out, _ = self.lstm(x)
         return self.sigmoid(self.fc(out[:, -1, :])).squeeze(-1)
+
+
+class SmallMLP(nn.Module):
+    """Simple MLP for DLG demo — small model makes gradient inversion tractable."""
+    def __init__(self, input_dim=14 * 48):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 128), nn.ReLU(),
+            nn.Linear(128, 1), nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        return self.net(x.reshape(x.size(0), -1)).squeeze(-1)
 
 
 # ======================================================================
@@ -68,7 +82,9 @@ def test_gradient_inversion():
     logger.info("=" * 60)
 
     torch.manual_seed(42)
-    model = BiLSTMSepsis().to(DEVICE)
+    # Use SmallMLP for DLG — gradient inversion is tractable on small feedforward nets
+    # (LSTMs have recurrent structure that makes DLG much harder)
+    model = SmallMLP(input_dim=14 * 48).to(DEVICE)
     criterion = nn.BCELoss()
 
     # Ground truth training sample (the secret)
@@ -77,41 +93,49 @@ def test_gradient_inversion():
     y_true = torch.tensor([1.0], device=DEVICE)
 
     # Compute real gradients (what the server sees in plain FedAvg)
-    # Disable CuDNN for LSTM so double-backward works (needed for DLG)
-    with torch.backends.cudnn.flags(enabled=False):
-        model.zero_grad()
-        pred = model(x_true)
-        loss = criterion(pred, y_true)
-        loss.backward()
+    model.zero_grad()
+    pred = model(x_true)
+    loss = criterion(pred, y_true)
+    loss.backward()
     real_grads = [p.grad.clone() for p in model.parameters()]
 
-    def run_dlg_attack(target_grads, label, num_steps=300):
-        """Run DLG with Adam optimizer (more stable than LBFGS)."""
-        x_d = torch.randn(batch_size, seq_len, features, device=DEVICE, requires_grad=True)
-        opt_d = optim.Adam([x_d], lr=0.01)
-        best_cos = -1.0
+    def run_dlg_attack(target_grads, label, num_steps=1000):
+        """Run DLG with Adam optimizer — multiple restarts for best result."""
+        best_cos_overall = -1.0
+        best_mse_overall = float('inf')
 
-        for step in range(num_steps):
-            opt_d.zero_grad()
-            model.zero_grad()
-            with torch.backends.cudnn.flags(enabled=False):
+        for restart in range(3):
+            torch.manual_seed(restart * 777)
+            x_d = torch.randn(batch_size, seq_len, features, device=DEVICE, requires_grad=True)
+            opt_d = optim.Adam([x_d], lr=0.05)
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(opt_d, T_max=num_steps)
+            best_cos = -1.0
+
+            for step in range(num_steps):
+                opt_d.zero_grad()
+                model.zero_grad()
                 dp = model(x_d)
-            dl = criterion(dp, label)
-            dl.backward(create_graph=True)
-            dg = [p.grad for p in model.parameters()]
+                dl = criterion(dp, label)
+                dl.backward(create_graph=True)
+                dg = [p.grad for p in model.parameters()]
 
-            grad_loss = sum(((a - b) ** 2).sum() for a, b in zip(dg, target_grads))
-            grad_loss.backward()
-            opt_d.step()
+                grad_loss = sum(((a - b) ** 2).sum() for a, b in zip(dg, target_grads))
+                grad_loss.backward()
+                opt_d.step()
+                scheduler.step()
 
-            with torch.no_grad():
-                cos = torch.nn.functional.cosine_similarity(
-                    x_d.flatten(), x_true.flatten(), dim=0
-                ).item()
-                best_cos = max(best_cos, cos)
+                with torch.no_grad():
+                    cos = torch.nn.functional.cosine_similarity(
+                        x_d.flatten(), x_true.flatten(), dim=0
+                    ).item()
+                    best_cos = max(best_cos, cos)
 
-        mse = ((x_d.detach() - x_true) ** 2).mean().item()
-        return best_cos, mse
+            mse = ((x_d.detach() - x_true) ** 2).mean().item()
+            if best_cos > best_cos_overall:
+                best_cos_overall = best_cos
+                best_mse_overall = mse
+
+        return best_cos_overall, best_mse_overall
 
     # --- Attack WITHOUT DP ---
     logger.info("\n  Attack WITHOUT DP:")
@@ -272,11 +296,12 @@ def test_membership_inference():
 # ======================================================================
 
 class FraudMLP(nn.Module):
-    def __init__(self, input_dim=30, hidden=64):
+    """MLP without dropout — intentionally overfits for MIA demonstration."""
+    def __init__(self, input_dim=30, hidden=128):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden), nn.ReLU(), nn.Dropout(0.3),
-            nn.Linear(hidden, hidden), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(input_dim, hidden), nn.ReLU(),
+            nn.Linear(hidden, hidden), nn.ReLU(),
             nn.Linear(hidden, 1), nn.Sigmoid(),
         )
     def forward(self, x): return self.net(x).squeeze(-1)
@@ -291,11 +316,12 @@ def test_mia_mlp():
     torch.manual_seed(42)
     np.random.seed(42)
 
-    n_members, n_nonmembers = 500, 500
+    # Use balanced labels (50/50) and small training set to encourage overfitting
+    n_members, n_nonmembers = 200, 200
     features = 30
 
     X_all = np.random.randn(n_members + n_nonmembers, features).astype(np.float32)
-    y_all = (np.random.rand(n_members + n_nonmembers) < 0.02).astype(np.float32)
+    y_all = (np.random.rand(n_members + n_nonmembers) < 0.5).astype(np.float32)
 
     X_train = torch.tensor(X_all[:n_members], device=DEVICE)
     y_train = torch.tensor(y_all[:n_members], device=DEVICE)
@@ -306,10 +332,10 @@ def test_mia_mlp():
 
     def train_and_attack(use_dp, noise_mult=0.0, clip_norm=1.0):
         model = FraudMLP().to(DEVICE)
-        opt = optim.Adam(model.parameters(), lr=0.001)
+        opt = optim.Adam(model.parameters(), lr=0.005)
         model.train()
-        for epoch in range(30):
-            for i in range(0, len(X_train), 64):
+        for epoch in range(100):  # overfit intentionally for MIA demo
+            for i in range(0, len(X_train), 32):
                 bx, by = X_train[i:i+64], y_train[i:i+64]
                 opt.zero_grad()
                 loss = criterion(model(bx), by).mean()

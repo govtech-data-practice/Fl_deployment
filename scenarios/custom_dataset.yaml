@@ -1,0 +1,32 @@
+# Example: run FL on an arbitrary CSV dataset — no code changes needed
+# Copy this file, edit the fields, and run:
+#   python run_ec2.py scenarios/custom_dataset.yaml
+
+name: "Custom Dataset Example"
+description: "FL on arbitrary tabular data via config — no code changes needed"
+task: generic
+
+# Data configuration
+data_config:
+  type: tabular                    # tabular or image
+  path: ""                         # path to CSV/NPZ, empty = synthetic
+  target_column: label             # column name for target (CSV only)
+  # feature_columns: [f1, f2, f3] # optional, default = all except target
+  input_dim: 30                    # auto-detected from file, used for synthetic
+  num_classes: 2                   # auto-detected from target
+  task_type: binary                # binary / multiclass / regression
+
+# Model configuration
+model_config:
+  name: mlp                        # mlp / logreg
+  hidden: 64                       # hidden layer size
+
+# FL configuration
+num_clients: 5
+num_rounds: 20
+strategies:
+  - "IID"
+  - "FedProx_Mu0.1_Alpha_0.5"
+  - "SCAFFOLD_Alpha_0.5"
+  - "SecAgg_Alpha_0.5"
+  - "DP_Central_Eps50.0_Alpha_0.5"
