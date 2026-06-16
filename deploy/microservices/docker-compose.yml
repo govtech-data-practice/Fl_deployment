@@ -1,0 +1,104 @@
+version: "3.8"
+
+# FL Platform — Microservices Deployment
+# ========================================
+# Runs coordinator + N clients as separate Docker services.
+#
+# Usage:
+#   docker compose up -d                    # start all services
+#   docker compose logs -f coordinator      # follow coordinator logs
+#   docker compose logs -f client_0         # follow client 0 logs
+#   docker compose down                     # stop all services
+#
+# Scale clients:
+#   docker compose up -d --scale client=3   # run 3 client instances
+
+services:
+  coordinator:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: fl-coordinator
+    environment:
+      - FL_DISTRIBUTED=1
+      - SUPERLINK_ADDRESS=0.0.0.0:9092
+      - SYNTHETIC=1
+      - FL_TASK=${FL_TASK:-fraud}
+      - NUM_ROUNDS=${NUM_ROUNDS:-5}
+      - NUM_CLIENTS=${NUM_CLIENTS:-2}
+    command: >
+      python3 run_ec2.py ${FL_TASK:-fraud}
+    ports:
+      - "9092:9092"
+    networks:
+      - fl-network
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost',9092)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  client_0:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: fl-client-0
+    environment:
+      - FL_SERVER=coordinator:9092
+      - PARTITION_ID=0
+      - NUM_CLIENTS=${NUM_CLIENTS:-2}
+      - FL_TASK=${FL_TASK:-fraud}
+      - SYNTHETIC=1
+    command: >
+      python3 run_client.py
+        --server coordinator:9092
+        --partition-id 0
+        --num-clients ${NUM_CLIENTS:-2}
+        --task ${FL_TASK:-fraud}
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - fl-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+  client_1:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: fl-client-1
+    environment:
+      - FL_SERVER=coordinator:9092
+      - PARTITION_ID=1
+      - NUM_CLIENTS=${NUM_CLIENTS:-2}
+      - FL_TASK=${FL_TASK:-fraud}
+      - SYNTHETIC=1
+    command: >
+      python3 run_client.py
+        --server coordinator:9092
+        --partition-id 1
+        --num-clients ${NUM_CLIENTS:-2}
+        --task ${FL_TASK:-fraud}
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - fl-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+networks:
+  fl-network:
+    driver: bridge

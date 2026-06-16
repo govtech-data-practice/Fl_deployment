@@ -26,7 +26,7 @@ HFL:                            VFL:
 ## Step 1: Entity Alignment with PSI
 
 ```python
-from psi import PSIProtocol, EntityAligner
+from fl_pets.psi import align_entities
 import os
 
 # Each party has a list of pseudonymised identifiers
@@ -35,15 +35,15 @@ org_a_ids = ["hash_001", "hash_002", "hash_003", "hash_004"]
 org_b_ids = ["hash_002", "hash_003", "hash_005"]
 org_c_ids = ["hash_003", "hash_004", "hash_002"]
 
-# Create aligner with shared salt (agreed out-of-band)
-aligner = EntityAligner(salt=os.urandom(32))
-
 # Align: find entities present in ALL parties
-result = aligner.align({
-    "org_a": org_a_ids,
-    "org_b": org_b_ids,
-    "org_c": org_c_ids,
-})
+result = align_entities(
+    parties={
+        "org_a": org_a_ids,
+        "org_b": org_b_ids,
+        "org_c": org_c_ids,
+    },
+    salt=os.urandom(32),
+)
 
 print(f"Common entities: {len(result['org_a'])}")
 # result["org_a"] = [1, 2]  → indices of matching records in org_a

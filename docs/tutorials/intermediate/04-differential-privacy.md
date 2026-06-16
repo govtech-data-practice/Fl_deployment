@@ -96,16 +96,15 @@ The DP mechanism follows this order:
 4. **SecAgg** — mask the noisy update (if SecAgg enabled — see Tutorial 5)
 
 ```python
-from fl_common.dp import clip_and_noise, PrivacyAccountant, get_dp_config
+from fl_pets.dp import compute_epsilon, get_preset, RDPAccountant
 
 # Get DP config (fail-closed to DP_STRONG)
-cfg = get_dp_config("DP_STRONG")
-print(f"sigma={cfg['sigma']}, C={cfg['C']}")
+cfg = get_preset("DP_STRONG")
+print(f"sigma={cfg['noise_multiplier']}, C={cfg['max_grad_norm']}")
 
-# Track privacy budget
-accountant = PrivacyAccountant(noise_multiplier=1.5, delta=1e-5)
-accountant.step(100)  # 100 rounds
-print(f"epsilon after 100 rounds: {accountant.get_epsilon():.2f}")
+# Compute privacy budget using Opacus RDP accountant
+eps = compute_epsilon(noise_multiplier=1.5, sample_rate=0.01, steps=100)
+print(f"epsilon after 100 steps (q=0.01): {eps:.4f}")
 ```
 
 ## What You Learned

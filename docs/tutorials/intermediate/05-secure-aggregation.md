@@ -53,16 +53,16 @@ Key parameters:
 ## Step 3: Test the Masking
 
 ```python
-from secagg import secagg_mask_parameters
+from fl_pets.secagg import mask_parameters, verify_cancellation
 import numpy as np
 
 # Simulate 3 clients with simple parameters
 params = [np.array([1.0, 2.0, 3.0])]
 
 # Each client masks their parameters
-masked_0 = secagg_mask_parameters(params, client_id=0, num_clients=3, round_seed=42)
-masked_1 = secagg_mask_parameters(params, client_id=1, num_clients=3, round_seed=42)
-masked_2 = secagg_mask_parameters(params, client_id=2, num_clients=3, round_seed=42)
+masked_0 = mask_parameters(params, client_id=0, num_clients=3, round_seed=42)
+masked_1 = mask_parameters(params, client_id=1, num_clients=3, round_seed=42)
+masked_2 = mask_parameters(params, client_id=2, num_clients=3, round_seed=42)
 
 # Individual masks look random
 print("Client 0:", masked_0[0])  # [1.xx, 2.xx, 3.xx] — noisy
@@ -72,6 +72,10 @@ print("Client 1:", masked_1[0])  # [1.xx, 2.xx, 3.xx] — different noise
 total = masked_0[0] + masked_1[0] + masked_2[0]
 print("Sum:     ", total)        # [3.0, 6.0, 9.0] — exact
 print("Expected:", params[0] * 3)
+
+# Or verify automatically:
+result = verify_cancellation(params, num_clients=3, round_seed=42)
+print("Max error:", result["max_error"])  # ~1e-07
 ```
 
 **Checkpoint:** The sum of masked parameters should equal the sum of unmasked parameters.
