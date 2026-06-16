@@ -16,9 +16,47 @@ Key capabilities:
 
 ## Prerequisites
 
+### System
+
 - Python 3.10+
-- Docker (for containerised deployment)
-- NVIDIA GPU with CUDA 12.4+ (optional, for GPU training)
+- Docker 24+ (for containerised deployment)
+- NVIDIA GPU with CUDA 12.4+ driver (optional, for GPU training)
+- OpenSSL (for certificate operations)
+- Terraform 1.5+ (optional, for infrastructure provisioning)
+
+### Core Libraries
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| [Flower](https://flower.ai/) | >= 1.30 | FL framework (simulation + distributed) |
+| [PyTorch](https://pytorch.org/) | >= 2.2 | Model training |
+| [torchvision](https://pytorch.org/) | >= 0.17 | Image model support (DenseNet, ResNet) |
+| [NumPy](https://numpy.org/) | >= 1.26 | Numerical computing |
+| [scikit-learn](https://scikit-learn.org/) | >= 1.5 | Metrics, preprocessing |
+| [pandas](https://pandas.pydata.org/) | >= 2.0 | Data loading and manipulation |
+| [Pillow](https://pillow.readthedocs.io/) | >= 10.0 | Image processing |
+| [PyYAML](https://pyyaml.org/) | >= 6.0 | Configuration parsing |
+
+### Optional Libraries (PETs & LLM)
+
+Install with `pip install -e ".[pets]"` or `pip install -e ".[all]"`:
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| [TenSEAL](https://github.com/OpenMined/TenSEAL) | >= 0.3 | Homomorphic encryption (CKKS/BFV) |
+| [Transformers](https://huggingface.co/transformers/) | >= 4.40 | LLM model loading (Mistral, OLMo) |
+| [PEFT](https://github.com/huggingface/peft) | >= 0.10 | LoRA/QLoRA adapter fine-tuning |
+| [Accelerate](https://github.com/huggingface/accelerate) | >= 0.30 | Distributed training utilities |
+| [bitsandbytes](https://github.com/TimDettmers/bitsandbytes) | >= 0.43 | 4-bit quantisation (QLoRA) |
+
+### Dev Tools
+
+Install with `pip install -e ".[dev]"`:
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| [pytest](https://pytest.org/) | >= 8.0 | Testing |
+| [Ruff](https://docs.astral.sh/ruff/) | >= 0.4 | Linting and formatting |
 
 ## Quick Start
 
