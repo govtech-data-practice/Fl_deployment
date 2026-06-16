@@ -128,6 +128,34 @@ See [docs/configuration.md](docs/configuration.md) for all parameters.
 - [Distributed Deployment](docs/Distributed_Deployment_Guide.md) — Full multi-node setup
 - [PET Reference](docs/PET_Reference.md) — DP, SecAgg, HE, MPC, TEE details
 
+## Infrastructure (Terraform)
+
+Provision the full FL cluster on AWS with Terraform:
+
+```bash
+cd deploy/terraform/
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values
+terraform init
+terraform plan
+terraform apply
+```
+
+Key variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `region` | `ap-southeast-1` | AWS region |
+| `num_supernodes` | `2` | Number of FL client instances |
+| `superlink_instance_type` | `t3.large` | Coordinator instance type |
+| `supernode_instance_type` | `g4dn.xlarge` | Client instance type (GPU) |
+| `use_gpu` | `false` | Use GPU instances for clients |
+| `key_name` | (required) | SSH key pair name |
+| `data_s3_bucket` | (required) | S3 bucket with training data |
+| `enable_tls` | `true` | Enable mTLS between nodes |
+
+Terraform provisions: VPC, subnets, security groups, EC2 instances (1 coordinator + N clients), S3 access, and TLS certificates. See `deploy/terraform/` for full configuration.
+
 ## Operational Scripts
 
 ```bash
