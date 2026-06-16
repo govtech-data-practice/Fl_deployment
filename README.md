@@ -215,15 +215,43 @@ FedAvg, FedProx, SCAFFOLD, FedAdam, FedYogi, SecAgg+, DP-Central, DP-Local, DP-L
 
 See [docs/configuration.md](docs/configuration.md) for all parameters.
 
-## Documentation
+## Tutorials
 
-- [Quick Start](docs/quickstart.md) — Local simulation setup
+Hands-on tutorials organised by experience level. See [docs/tutorials/](docs/tutorials/README.md) for the full index.
+
+### Beginner (no infra needed)
+
+| # | Tutorial | Time | Topic |
+|---|----------|------|-------|
+| 1 | [Setup & First Run](docs/tutorials/beginner/01-setup.md) | 15 min | Install, verify, first FL experiment |
+| 2 | [Your First Model](docs/tutorials/beginner/02-first-model.md) | 20 min | Tasks, models, strategies |
+| 3 | [Data Pipeline](docs/tutorials/beginner/03-data-pipeline.md) | 15 min | Ingest, validate, manifests |
+
+### Intermediate (single machine)
+
+| # | Tutorial | Time | Topic |
+|---|----------|------|-------|
+| 4 | [Differential Privacy](docs/tutorials/intermediate/04-differential-privacy.md) | 25 min | DP presets, budget, trade-offs |
+| 5 | [Secure Aggregation](docs/tutorials/intermediate/05-secure-aggregation.md) | 15 min | SecAgg, pairwise masking |
+| 6 | [FL Strategies](docs/tutorials/intermediate/06-strategies.md) | 30 min | FedProx, SCAFFOLD, non-IID |
+| 7 | [Privacy Attacks](docs/tutorials/intermediate/07-privacy-attacks.md) | 25 min | MIA, gradient leakage, canary |
+
+### Advanced (multi-node, cloud)
+
+| # | Tutorial | Time | Topic |
+|---|----------|------|-------|
+| 8 | [Distributed Deployment](docs/tutorials/advanced/08-distributed-deployment.md) | 45 min | EC2, mTLS, Docker |
+| 9 | [Terraform](docs/tutorials/advanced/09-terraform.md) | 30 min | AWS provisioning |
+| 10 | [Vertical FL & PSI](docs/tutorials/advanced/10-vertical-fl.md) | 25 min | VFL, entity alignment, split learning |
+| 11 | [LLM Fine-tuning](docs/tutorials/advanced/11-llm-finetuning.md) | 30 min | Federated LoRA/QLoRA |
+| 12 | [Operations](docs/tutorials/advanced/12-operations.md) | 30 min | Monitoring, certs, governance, cost |
+
+### Reference
+
 - [Configuration Reference](docs/configuration.md) — All configurable parameters
-- [Deployment Guide](docs/deployment.md) — Per-environment deployment
-- [Troubleshooting](docs/troubleshooting.md) — Common issues and diagnostics
-- [Cost Reporting](docs/cost-reporting.md) — Cost tracking methodology
-- [Distributed Deployment](docs/Distributed_Deployment_Guide.md) — Full multi-node setup
 - [PET Reference](docs/PET_Reference.md) — DP, SecAgg, HE, MPC, TEE details
+- [Distributed Deployment Guide](docs/Distributed_Deployment_Guide.md) — Detailed multi-node setup
+- [Cost Reporting](docs/cost-reporting.md) — Cost tracking methodology
 
 ## Infrastructure (Terraform)
 
