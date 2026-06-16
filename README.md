@@ -43,20 +43,73 @@ See [docs/quickstart.md](docs/quickstart.md) for the full step-by-step guide.
 
 ## Architecture
 
-```
-                     Coordinator (ServerApp)
-                            |
-              +-------------+-------------+
-              |             |             |
-         Client A      Client B      Client C
-         [local data]  [local data]  [local data]
+### Horizontal FL — same features, different samples
 
-  - Clients train locally, send only encrypted model updates
-  - Coordinator aggregates updates (FedAvg, SCAFFOLD, etc.)
-  - mTLS secures all communication
-  - SecAgg masks individual updates
-  - Differential Privacy bounds information leakage
 ```
+Site A              Site B              Site C
+[patient records]   [patient records]   [patient records]
+     |                   |                   |
+     |  model updates    |  model updates    |  model updates
+     +--------->---------+--------->---------+
+                         |
+                  FL Server (aggregates)
+                  No raw data leaves any site
+```
+
+### Vertical FL — different features, same entities
+
+```
+Org A               Org B               Org C
+[transactions]      [credit scores]     [demographics]
+     |                   |                   |
+     |  partial model    |  partial model    |  partial model
+     +--------->---------+--------->---------+
+                         |
+                  FL Server (combines partial models)
+                  Each org only sees its own feature columns
+```
+
+### Split Learning — model split across sites
+
+```
+Site (bottom)              Cloud (top)
+[raw data → LSTM]  ──────> [classifier]
+     |                          |
+   embeddings             predictions
+   (no raw data)          (no raw data)
+```
+
+### Federated Transfer Learning — pretrained model fine-tuned across sites
+
+```
+                  Pretrained Model (e.g. ImageNet DenseNet-121)
+                         |
+         +───────────────+───────────────+
+         |               |               |
+    Site A           Site B           Site C
+    [fine-tune on    [fine-tune on    [fine-tune on
+     local images]    local images]    local images]
+         |               |               |
+         +──── FL Server aggregates fine-tuned weights ────+
+```
+
+### Federated LoRA — large model, only adapters are federated
+
+```
+                  Frozen LLM (e.g. Mistral 7B)
+                         |
+         +───────────────+───────────────+
+         |               |               |
+    Site A           Site B           Site C
+    [train LoRA      [train LoRA      [train LoRA
+     adapter on       adapter on       adapter on
+     local docs]      local docs]      local docs]
+         |               |               |
+         +──── FL Server aggregates LoRA adapters (160MB) ────+
+                  (not the full 7B model)
+```
+
+Each participant keeps data on-premise. Only encrypted model updates (or adapters) leave each site. The server aggregates without ever seeing raw data.
 
 ## Repository Structure
 
@@ -161,6 +214,68 @@ Key variables:
 | `enable_tls` | `true` | Enable mTLS between nodes |
 
 Terraform provisions: VPC, subnets, security groups, EC2 instances (1 coordinator + N clients), S3 access, and TLS certificates. See `deploy/terraform/` for full configuration.
+
+## Results (Validated on EC2)
+
+| Task | Model | Best Strategy | Metric | Notes |
+|------|-------|--------------|--------|-------|
+| Chest X-ray (NIH 112K) | DenseNet-121 | FedAvg | AUC 0.819 | Beats centralized (0.803) |
+| Sepsis (eICU 100K+) | BiLSTM | SCAFFOLD | Acc 0.809 | 5 clients distributed |
+| Fraud (50K) | MLP | FedAvg | Acc 0.98 | 11/11 strategies pass |
+| Mortality (eICU) | TabNet | FedAvg | Acc 0.876 | 11/11 strategies pass |
+| Readmission | LogReg | FedAvg | - | 11/11 strategies pass |
+| Anomaly detection | Autoencoder | FedAvg | AUC 0.93 | Unsupervised |
+| Clinical NLP | Mistral 7B QLoRA | FL LoRA + DP | MIA 1.0->0.83 | Canary leakage reduced |
+
+### Key Findings
+
+- FedAvg AUC 0.819 > centralized 0.803 on chest X-ray (implicit regularisation)
+- DP destroys large models (DenseNet AUC->0.50) but works on small models (BiLSTM 0.65)
+- LLM canary leakage: 41.7% without DP -> 16.7% with DP
+- FedAdam/FedYogi diverge on pretrained models — FedAvg+SCAFFOLD preferred
+
+## Roadmap
+
+### v0.1 — Foundation (Done)
+
+12 models, 10 tasks, 11 FL strategies, 4 secure inference demos, distributed across 6 EC2 GPU nodes. Production data pipeline with `ingest.py`.
+
+### v0.2 — Synthetic Data Engine & Integrity
+
+- Synthetic data engine: generators for each demo domain (EHR time series, medical images, transactions, ECG waveforms, satellite patches, molecular fingerprints) — for testing data format compatibility, pipeline integration, partitioning strategies, and non-IID distribution scenarios
+- Robust aggregation: Krum, Multi-Krum, Trimmed Mean, Bulyan, FLTrust
+- Poisoning attack suite: label flipping, gradient scaling, backdoor
+- Audit trail: round-level JSONL log, HMAC signing, model provenance, privacy budget ledger
+
+### v0.3 — TEE
+
+- FL server inside AWS Nitro Enclave
+- Client-side attestation verification (PCR validation)
+- Encrypted client updates via enclave public key
+
+### v0.4 — Advanced PETs
+
+- SecAgg+ (dropout-tolerant), Paillier/CKKS HE aggregation
+- DP-FTRL, adaptive clipping, user-level DP
+- Federated analytics (aggregate stats without ML)
+- Federated GAN: DP-CTGAN for synthetic tabular data, federated DCGAN/StyleGAN for synthetic image generation
+
+### v0.5 — Deployment Hardening
+
+- Air-gapped deployment (offline Docker + pip bundles)
+- RBAC (Admin, Operator, Data Owner, Auditor, Model Consumer)
+- Data sovereignty policy engine (geo-tagging, region restrictions)
+- Cost calculator: estimate compute costs by task, model size, number of clients, rounds, and cloud provider
+
+### v1.0 — Extended Models
+
+- New data types: U-Net (segmentation), YOLO (detection), GNN (graphs), BERT (NER), Whisper (audio), 3D CNN (volumetric)
+- New FL paradigms: federated XGBoost, multi-modal (CLIP), federated RL, federated GAN
+- Production secure inference:
+  - **CrypTen** (Meta) — MPC-based, PyTorch native. Runs DenseNet-121, ResNet-50, BERT, speech models
+  - **CrypTFlow2/EzPC** (Microsoft Research) — 2PC with OT. Validated on DenseNet-121 chest X-ray across 7 multi-institution sites
+  - **SecretFlow/SPU** (Ant Group) — MPC hybrid (ABY3, Semi2k, Cheetah). Runs LLaMA-7B inference
+  - **Concrete ML** (Zama) — FHE-based, single-server. Best for small-medium models with quantization
 
 ## Operational Scripts
 
