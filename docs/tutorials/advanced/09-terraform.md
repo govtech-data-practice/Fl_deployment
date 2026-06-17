@@ -6,8 +6,7 @@
 
 - Provision FL infrastructure on AWS with Terraform
 - Configure VPC, security groups, and EC2 instances
-- Enable TLS and GPU support
-- Manage infrastructure lifecycle
+- Deploy containers to provisioned infrastructure
 
 ## Step 1: Configure Terraform Variables
 
@@ -46,40 +45,29 @@ Review the plan. Terraform will create:
 terraform apply
 ```
 
-Type `yes` to confirm. Note the outputs:
+Note the outputs:
 ```
 superlink_public_ip = "54.x.x.x"
 supernode_public_ips = ["10.0.1.10", "10.0.1.11", "10.0.1.12"]
 ```
 
-## Step 4: Configure cluster.env
+## Step 4: Deploy Containers
 
-Use the Terraform outputs to populate your cluster config:
-
-```bash
-cd ../..
-cat > cluster.env << EOF
-FL_SERVER_HOST=$(cd deploy/terraform && terraform output -raw superlink_public_ip)
-FL_CLIENT_HOSTS="$(cd deploy/terraform && terraform output -json supernode_public_ips | python3 -c 'import sys,json;print(" ".join(json.load(sys.stdin)))')"
-FL_NUM_CLIENTS=3
-FL_SSH_KEY=~/.ssh/your-keypair.pem
-EOF
-```
-
-## Step 5: Deploy and Run
+Use the Terraform outputs to deploy Docker containers:
 
 ```bash
-# Generate certs, distribute image, start services
-./deploy/distributed/deploy.sh up
+# On coordinator
+ssh ec2-user@<superlink_ip> "docker run -d --name fl-coordinator \
+  -p 9092:9092 healthcare-fl:v1.0.0 \
+  python3 runners/run_ec2.py fraud --distributed"
 
-# Run a smoke test on the real infrastructure
-python runners/run_ec2.py fraud --synthetic
-
-# Verify everything is healthy
-./deploy/health_check.sh
+# On each client
+ssh ec2-user@<supernode_ip> "docker run -d --name fl-client \
+  healthcare-fl:v1.0.0 \
+  python3 runners/run_client.py --server <coordinator_private_ip>:9092"
 ```
 
-## Step 6: Key Terraform Variables
+## Step 5: Key Terraform Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -87,27 +75,16 @@ python runners/run_ec2.py fraud --synthetic
 | `num_supernodes` | `2` | Number of client instances |
 | `superlink_instance_type` | `t3.large` | Coordinator instance type |
 | `supernode_instance_type` | `g4dn.xlarge` | Client instance type (GPU) |
-| `supernode_instance_type_cpu` | `t3.xlarge` | CPU fallback |
 | `use_gpu` | `false` | Enable GPU instances |
 | `key_name` | (required) | SSH key pair |
 | `data_s3_bucket` | (required) | S3 bucket for data |
 | `enable_tls` | `true` | Enable mTLS |
-| `allowed_ssh_cidrs` | `[]` | SSH access CIDR blocks |
 
-## Step 7: Tear Down
+## Step 6: Tear Down
 
 ```bash
-cd deploy/terraform/
 terraform destroy
 ```
-
-Type `yes` to confirm. All AWS resources are removed.
-
-## What You Learned
-
-- Terraform automates the full infrastructure lifecycle
-- One `terraform apply` provisions the complete FL cluster
-- Outputs feed directly into `cluster.env` for deployment scripts
 
 ## Next Steps
 

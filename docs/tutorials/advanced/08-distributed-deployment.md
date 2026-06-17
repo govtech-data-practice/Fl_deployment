@@ -1,126 +1,96 @@
 # Tutorial 8: Distributed Deployment
 
-**Time:** 45 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 7](../intermediate/07-privacy-attacks.md), AWS account
+**Time:** 45 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 7](../intermediate/07-privacy-attacks.md), Docker installed
 
 ## What You'll Learn
 
-- Deploy FL to real EC2 instances (1 coordinator + N clients)
-- Configure mTLS for secure communication
-- Run distributed training across multiple nodes
+- Deploy FL as microservices (Docker Compose)
+- Run distributed training across multiple containers
 - Monitor and troubleshoot a live cluster
 
-## Step 1: Configure Your Cluster
+## Step 1: Local Microservices (Single Machine)
+
+The quickest way to test distributed FL:
 
 ```bash
-cp deploy/cluster.env.template cluster.env
+cd deploy/microservices
+
+# Start coordinator + 2 clients (fraud detection)
+docker compose up
+
+# Or a different task
+FL_TASK=sepsis docker compose up
 ```
 
-Edit `cluster.env` with your values:
-```bash
-FL_SERVER_HOST=54.x.x.x          # Coordinator public IP
-FL_SERVER_PRIVATE=172.31.x.x     # Coordinator private IP
-FL_CLIENT_HOSTS="10.0.1.10 10.0.1.11"  # Client IPs
-FL_NUM_CLIENTS=2
-FL_SSH_KEY=~/.ssh/fl_cluster.pem
-```
+This starts 3 containers on a shared Docker network:
+- `fl-coordinator` — runs `runners/run_ec2.py --distributed` on port 9092
+- `fl-client-0` — runs `runners/run_client.py --server coordinator:9092`
+- `fl-client-1` — runs `runners/run_client.py --server coordinator:9092`
 
-Validate the configuration:
-```bash
-./deploy/validate_config.sh
-```
-
-## Step 2: Generate mTLS Certificates
+## Step 2: Build the Docker Image
 
 ```bash
-./deploy/gen_mtls_certs.sh
-```
-
-This creates a CA and issues certificates for the coordinator and all clients. Certificates are stored in `certs/`.
-
-Verify:
-```bash
-openssl x509 -in certs/server.pem -noout -subject -dates
-```
-
-## Step 3: Build and Deploy
-
-```bash
-# Build the Docker image
+# From repo root
 docker build -t healthcare-fl:v1.0.0 .
 
-# Deploy to all nodes (distributes image, certs, and config)
-./deploy/distributed/deploy.sh up
+# Verify
+docker run --rm healthcare-fl:v1.0.0 python3 -c "import flwr; print('Flower', flwr.__version__)"
 ```
 
-This:
-1. Copies the Docker image to all nodes
-2. Distributes TLS certificates
-3. Starts the Flower SuperLink on the coordinator
-4. Starts SuperNodes on each client
+## Step 3: Multi-Node Deployment (EC2)
 
-## Step 4: Pre-flight Check
+For real distributed deployment across separate EC2 instances:
 
+**On the coordinator node:**
 ```bash
-./scripts/preflight.sh
+docker compose -f deploy/distributed/docker-compose.superlink.yml up -d
 ```
 
-Verify all checks pass:
-- SSH connectivity to all nodes
-- Docker running on all nodes
-- GPU available (if using GPU instances)
-- Certificates valid and distributed
-- gRPC port accessible
+**On each client node:**
+```bash
+FL_SERVER=<coordinator_private_ip>:9092 \
+docker compose -f deploy/distributed/docker-compose.supernode.yml up -d
+```
 
-## Step 5: Run Distributed Training
+## Step 4: Run Distributed Training
 
 ```bash
-# Run fraud detection across the real cluster
-python runners/run_ec2.py fraud
+# Run from the coordinator
+python3 runners/run_ec2.py fraud --distributed
 ```
 
 In distributed mode:
-- The coordinator manages the SuperLink (aggregation server)
-- Each client runs a SuperNode (local training)
-- Communication is encrypted with mTLS
-- Model updates flow over gRPC on port 9092
+- The coordinator manages aggregation (FedAvg, SCAFFOLD, etc.)
+- Each client trains locally and sends encrypted model updates
+- Communication flows over gRPC on port 9092
 
-## Step 6: Monitor the Cluster
+## Step 5: Monitor
 
 ```bash
-# Full health check
-./deploy/health_check.sh
+# Check container status
+docker compose -f deploy/microservices/docker-compose.yml ps
 
-# JSON output for monitoring systems
-./deploy/health_check.sh --json
+# Follow coordinator logs
+docker compose -f deploy/microservices/docker-compose.yml logs -f coordinator
 
-# Quick check (coordinator only)
-./deploy/health_check.sh --quick
+# Follow a client
+docker compose -f deploy/microservices/docker-compose.yml logs -f client_0
 ```
 
-## Step 7: Collect Diagnostics
-
-If something goes wrong:
+## Step 6: Tear Down
 
 ```bash
-./scripts/diagnose.sh --run-id fraud-001 --env production --since 2h
-```
-
-This creates a `diag-*.tar.gz` bundle with system info, logs, cert status, and configuration.
-
-## Step 8: Tear Down
-
-```bash
-./deploy/distributed/deploy.sh down
+docker compose -f deploy/microservices/docker-compose.yml down
 ```
 
 ## Checkpoint
 
 After completing this tutorial, you should have:
-- [ ] A running FL cluster with mTLS
-- [ ] Successfully completed a distributed training run
-- [ ] Verified cluster health with `health_check.sh`
-- [ ] Collected a diagnostic bundle
+- [ ] Built the Docker image
+- [ ] Run microservices deployment locally
+- [ ] Completed a distributed training run
+- [ ] Monitored coordinator and client logs
 
 ## Next Steps
 
-- [Tutorial 9: Infrastructure with Terraform](09-terraform.md) — automate provisioning
+- [Tutorial 9: Infrastructure with Terraform](09-terraform.md) — automate AWS provisioning

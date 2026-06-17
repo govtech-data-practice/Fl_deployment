@@ -27,19 +27,17 @@ pip install -e ".[dev]"
 
 ## Step 2: Verify Your Environment
 
-Run the pre-flight check:
+Verify your environment:
 
 ```bash
-./scripts/preflight.sh --check tooling
+python3 -c "import flwr; print('Flower', flwr.__version__)"
+python3 -c "import torch; print('PyTorch', torch.__version__, '| CUDA:', torch.cuda.is_available())"
+python3 -c "import fl_pets; print('fl_pets: ok')"
 ```
 
 **Expected output:**
 ```
-FL Platform Pre-flight Checks
-==============================
-
-Tooling:
-  [PASS] Python 3.12.x
+Flower 1.30.0
   [PASS] Docker version 28.x.x
   [PASS] Flower 1.30.0
   [PASS] PyTorch 2.x.x (CPU or CUDA)

@@ -43,4 +43,3 @@ Detailed parameter tables and supplementary material:
 - [PET Reference](../PET_Reference.md)
 - [Distributed Deployment Guide](../Distributed_Deployment_Guide.md)
 - [Production Technical Reference](../FL_Production_Technical_Reference.md)
-- [Cost Reporting](../cost-reporting.md)

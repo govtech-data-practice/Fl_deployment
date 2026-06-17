@@ -5,62 +5,61 @@
 ## What You'll Learn
 
 - Monitor a production FL deployment
-- Handle common operational tasks (cert rotation, onboarding, incidents)
+- Handle operational tasks (cert management, onboarding, incidents)
 - Understand governance requirements
 - Track costs
 
 ## Step 1: Health Monitoring
 
 ```bash
-# Full cluster health check
-./deploy/health_check.sh
+# Check container status
+docker compose -f deploy/microservices/docker-compose.yml ps
 
-# JSON output (for dashboards / automation)
-./deploy/health_check.sh --json
+# Follow coordinator logs
+docker compose -f deploy/microservices/docker-compose.yml logs -f coordinator
 
-# Quick check (coordinator only)
-./deploy/health_check.sh --quick
+# Check GPU status on a node
+nvidia-smi
 ```
 
-The health check verifies: SSH connectivity, Docker status, GPU availability, disk space, Docker image presence, TLS certificate validity, and port status.
+For multi-node deployments, check each node via SSH:
+```bash
+ssh ec2-user@<node_ip> "docker ps && nvidia-smi"
+```
 
-## Step 2: Certificate Rotation
+## Step 2: Certificate Management
 
-Certificates expire. The platform alerts at 30, 14, and 7 days before expiry.
+Generate mTLS certificates using OpenSSL:
 
 ```bash
-# Check current certificate expiry
-openssl x509 -in certs/server.pem -noout -dates
+# Generate CA
+openssl req -x509 -newkey rsa:4096 -keyout ca.key -out ca.pem -days 365 -nodes
 
-# Rotate certificates
-./deploy/rotate_certs.sh
+# Generate server cert
+openssl req -newkey rsa:4096 -keyout server.key -out server.csr -nodes
+openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 365
 
-# Verify new certs
-./deploy/health_check.sh
+# Verify
+openssl x509 -in server.pem -noout -subject -dates
+openssl verify -CAfile ca.pem server.pem
 ```
 
-See `runbooks/certificate_rotation.md` for the full procedure.
+See `runbooks/certificate_rotation.md` for the full rotation procedure.
 
 ## Step 3: Adding a New Participant
 
 When a new organisation joins the federation:
 
-```bash
-# 1. Generate their certificate
-./deploy/gen_mtls_certs.sh --client new_participant
-
-# 2. Add their IP to cluster.env
-# FL_CLIENT_HOSTS="<existing> <new_ip>"
-
-# 3. Deploy to the new node
-./deploy/distributed/deploy.sh setup-client <new_ip>
-
-# 4. Smoke test
-python runners/run_ec2.py fraud --synthetic
-
-# 5. Verify
-./deploy/health_check.sh
-```
+1. **Governance** — sign federation agreement (see `templates/federation_agreement.md`)
+2. **Certificate** — issue client certificate from the CA
+3. **Network** — ensure gRPC port 9092 is accessible
+4. **Deploy** — start client container:
+   ```bash
+   docker run -d --name fl-client-new \
+     healthcare-fl:v1.0.0 \
+     python3 runners/run_client.py --server <coordinator>:9092 --partition-id 2
+   ```
+5. **Validate** — run smoke test to confirm participation
 
 See `runbooks/new_client_onboarding.md` for the full checklist.
 
@@ -69,18 +68,16 @@ See `runbooks/new_client_onboarding.md` for the full checklist.
 When something goes wrong:
 
 ```bash
-# 1. Collect diagnostics
-./scripts/diagnose.sh --run-id <id> --env production --since 4h
+# 1. Check container logs
+docker logs fl-coordinator --tail 50
+docker logs fl-client-0 --tail 50
 
-# 2. Review the bundle
-tar -xzf diag-*.tar.gz
-cat diag-*/system_info.txt
-cat diag-*/cert_status.txt
-cat diag-*/docker_logs.txt
+# 2. Check system resources
+docker stats --no-stream
 
 # 3. Common fixes
-./deploy/distributed/deploy.sh restart   # Restart services
-./deploy/rollback.sh                     # Rollback to previous version
+docker compose -f deploy/microservices/docker-compose.yml restart
+docker compose -f deploy/microservices/docker-compose.yml down
 ```
 
 ### Severity Levels
@@ -95,14 +92,6 @@ cat diag-*/docker_logs.txt
 See `runbooks/incident_response.md` for full procedures.
 
 ## Step 5: Backup and DR
-
-```bash
-# Manual backup
-./deploy/backup.sh
-
-# Verify backup integrity
-./deploy/backup.sh --verify
-```
 
 **Backup scope:**
 
@@ -130,12 +119,6 @@ Before production, ensure all checkpoints are cleared:
 
 ## Step 7: Cost Tracking
 
-Use the cost reporting template:
-
-```bash
-cat docs/cost-reporting.md
-```
-
 Key cost drivers:
 - Coordinator compute (EC2 instance hours)
 - Client compute (per participant)
@@ -144,26 +127,7 @@ Key cost drivers:
 - Logging (CloudWatch)
 
 Tag all AWS resources with `Project`, `Environment`, and `Component` for cost allocation.
-
-## Step 8: Troubleshooting Quick Reference
-
-| Symptom | First Step |
-|---------|-----------|
-| Client can't connect | `./deploy/health_check.sh --quick` |
-| mTLS failure | `openssl verify -CAfile certs/ca.pem certs/server.pem` |
-| Training diverges | `python tools/dp_budget.py --all --rounds <N>` |
-| SecAgg aborting | Check `secagg/config.yaml` min_quorum |
-| DP budget exhausted | Expected — review round count vs budget |
-| Image not found | `./deploy/distributed/deploy.sh distribute` |
-
-See `docs/troubleshooting.md` for detailed resolution steps.
-
-## What You Learned
-
-- Production FL requires monitoring, cert management, and incident procedures
-- Runbooks provide step-by-step guides for common operational tasks
-- Governance checkpoints must be cleared before production
-- Cost tracking uses AWS resource tagging
+See the [Terraform tutorial](09-terraform.md) for infrastructure provisioning.
 
 ## Congratulations
 
@@ -173,5 +137,3 @@ You've completed all 12 tutorials. You now know how to:
 - Choose the right FL strategy for your data
 - Deploy and operate a production FL cluster
 - Use VFL, split learning, and federated LLM fine-tuning
-
-For reference material, see the [docs/](../../) directory.

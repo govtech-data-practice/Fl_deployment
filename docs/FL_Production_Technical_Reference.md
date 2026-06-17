@@ -3,6 +3,10 @@
 **Last updated:** 2026-05-26
 **Scope:** Production technical reference for deploying FL+PET systems in government environments.
 
+> **Note:** This reference describes operational shell scripts (e.g. `deploy/*.sh`) that are
+> maintained as internal tooling and not included in the public repository. For deployment,
+> use Docker Compose (`deploy/microservices/`) or Terraform (`deploy/terraform/`).
+
 This document covers the architecture, security model, failure modes, and operational considerations for production federated learning. It is based on a reference implementation validated on AWS EC2 (g6.8xlarge server, 5x g6.4xlarge clients) and documents what works, what the limitations are, and what each deployment decision trades off. Every claim is tagged with its actual implementation status.
 
 ---

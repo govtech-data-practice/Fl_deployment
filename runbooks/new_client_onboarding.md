@@ -17,7 +17,7 @@ Adding a new participant to the federation requires governance approval, infrast
 
 ```bash
 # Generate client certificate for new participant
-./deploy/gen_mtls_certs.sh --client <participant_id>
+openssl req -x509 -newkey rsa:4096 -keyout ca.key -out ca.pem -days 365 -nodes
 ```
 
 - Issue certificate from subordinate CA
@@ -44,7 +44,7 @@ nc -zv <coordinator_ip> 9092
 # FL_NUM_CLIENTS=<updated_count>
 
 # Deploy to new client
-./deploy/distributed/deploy.sh setup-client <new_client_ip>
+docker run -d healthcare-fl:v1.0.0 python3 runners/run_client.py --server <coordinator>:9092
 ```
 
 Participant-side setup:
@@ -61,7 +61,7 @@ python tools/validate_manifest.py ~/fl-deploy/data/<task>/manifest.json --task <
 python runners/run_ec2.py fraud --synthetic
 
 # Verify in health check
-./deploy/health_check.sh
+docker compose -f deploy/microservices/docker-compose.yml ps
 ```
 
 Confirm:

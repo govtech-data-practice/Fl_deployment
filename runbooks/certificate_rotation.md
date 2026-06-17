@@ -23,7 +23,7 @@ All FL communication is secured with mTLS. Certificates must be rotated before e
 
 ```bash
 # Generate new mTLS certificates
-./deploy/gen_mtls_certs.sh
+openssl req -x509 -newkey rsa:4096 -keyout ca.key -out ca.pem -days 365 -nodes
 
 # Verify the new certificates
 openssl x509 -in certs/server.pem -noout -subject -dates
@@ -34,21 +34,21 @@ openssl x509 -in certs/client.pem -noout -subject -dates
 
 ```bash
 # Uses deploy.sh to distribute certs to all nodes
-./deploy/distributed/deploy.sh distribute-certs
+# Distribute certs via scp to each node
 ```
 
 ### 3. Restart Services
 
 ```bash
 # Rolling restart (coordinator first, then clients one at a time)
-./deploy/distributed/deploy.sh restart
+docker compose -f deploy/microservices/docker-compose.yml restart
 ```
 
 ### 4. Validate
 
 ```bash
 # Verify mTLS connectivity
-./deploy/health_check.sh
+docker compose -f deploy/microservices/docker-compose.yml ps
 
 # Run smoke test
 python runners/run_ec2.py fraud --synthetic

@@ -26,7 +26,7 @@
 
 ### 4. Diagnose
 ```bash
-./scripts/diagnose.sh --run-id <affected-run-id> --env production --since 4h
+docker logs fl-coordinator --tail 100 > diag.log 2>&1
 ```
 Review the diagnostic bundle:
 - `system_info.txt` — resource exhaustion?
@@ -36,13 +36,13 @@ Review the diagnostic bundle:
 
 ### 5. Remediate
 Apply the fix. Common remediation paths:
-- Container restart: `./deploy/distributed/deploy.sh restart`
-- Certificate rotation: `./deploy/rotate_certs.sh`
-- Rollback: `./deploy/rollback.sh`
+- Container restart: `docker compose -f deploy/microservices/docker-compose.yml restart`
+- Certificate rotation: `# See runbooks/certificate_rotation.md for OpenSSL commands`
+- Rollback: `docker compose -f deploy/microservices/docker-compose.yml down && docker compose up -d`
 
 ### 6. Verify
 - Run smoke test: `python runners/run_ec2.py fraud --synthetic`
-- Run health check: `./deploy/health_check.sh`
+- Run health check: `docker compose -f deploy/microservices/docker-compose.yml ps
 
 ### 7. Resume
 - Resume training only after verification passes

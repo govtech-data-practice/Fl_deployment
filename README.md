@@ -4,7 +4,7 @@ Federated Learning reference implementation with Privacy-Enhancing Technologies 
 
 ## Overview
 
-This repository provides a working implementation of cross-silo federated learning, designed as a companion to the [FL Deployment Guide](docs/deployment.md). It demonstrates how organisations can train shared models across institutional boundaries **without moving raw data**.
+This repository provides a working implementation of cross-silo federated learning, designed as a companion to the [FL Deployment Guide](docs/tutorials/advanced/08-distributed-deployment.md). It demonstrates how organisations can train shared models across institutional boundaries **without moving raw data**.
 
 Key capabilities:
 
@@ -77,7 +77,7 @@ python tools/validate_manifest.py ~/fl-deploy/data/fraud/manifest.json
 python tools/dp_budget.py --all --rounds 100
 ```
 
-See [docs/quickstart.md](docs/quickstart.md) for the full step-by-step guide.
+See [Tutorial 1: Setup & First Run](docs/tutorials/beginner/01-setup.md) for the full step-by-step guide.
 
 ## Architecture
 
@@ -263,7 +263,7 @@ Hands-on tutorials organised by experience level. See [docs/tutorials/](docs/tut
 - [Configuration Reference](docs/configuration.md) — All configurable parameters
 - [PET Reference](docs/PET_Reference.md) — DP, SecAgg, HE, MPC, TEE details
 - [Distributed Deployment Guide](docs/Distributed_Deployment_Guide.md) — Detailed multi-node setup
-- [Cost Reporting](docs/cost-reporting.md) — Cost tracking methodology
+- [Operations & Cost](docs/tutorials/advanced/12-operations.md) — Monitoring, governance, cost tracking
 
 ## Infrastructure (Terraform)
 
@@ -355,21 +355,17 @@ Terraform provisions: VPC, subnets, security groups, EC2 instances (1 coordinato
   - **SecretFlow/SPU** (Ant Group) — MPC hybrid (ABY3, Semi2k, Cheetah). Runs LLaMA-7B inference
   - **Concrete ML** (Zama) — FHE-based, single-server. Best for small-medium models with quantization
 
-## Operational Scripts
+## Deployment
 
 ```bash
-# Pre-flight validation
-./scripts/preflight.sh --check tooling --check endpoints
+# Microservices (Docker Compose)
+cd deploy/microservices
+docker compose up                          # coordinator + 2 clients
+FL_TASK=sepsis docker compose up           # different task
 
-# Diagnostic bundle
-./scripts/diagnose.sh --run-id <id> --env production --since 2h
-
-# Cluster health check
-./deploy/health_check.sh
-
-# Certificate rotation
-./deploy/rotate_certs.sh
-
-# Deploy to cluster
-./deploy/distributed/deploy.sh up
+# Multi-node (Terraform + Docker)
+cd deploy/terraform
+terraform init && terraform apply          # provision AWS infra
 ```
+
+See [Tutorial 8: Distributed Deployment](docs/tutorials/advanced/08-distributed-deployment.md) and [Tutorial 9: Terraform](docs/tutorials/advanced/09-terraform.md).

@@ -15,13 +15,13 @@
 
 ```bash
 # Manual backup
-./deploy/backup.sh
+# Run backup (copy results, certs, config to S3)
 
 # Verify backup integrity
-./deploy/backup.sh --verify
+# Verify backup integrity
 
 # List available backups
-./deploy/backup.sh --list
+# List available backups
 ```
 
 ## DR Drill Procedure

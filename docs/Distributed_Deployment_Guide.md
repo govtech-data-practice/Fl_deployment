@@ -4,6 +4,11 @@
 **Last updated:** 2026-05-28
 **Platform:** AWS EC2 (configurable region), Amazon Linux 2023, NVIDIA L4 GPU
 
+> **Note:** This guide references operational shell scripts (e.g. `deploy/*.sh`) that are
+> maintained as internal tooling and not included in the public repository. For deployment,
+> use the Docker Compose configurations in `deploy/microservices/` and `deploy/distributed/`,
+> or the Terraform modules in `deploy/terraform/`. See [Tutorial 8](tutorials/advanced/08-distributed-deployment.md).
+
 ---
 
 ## Table of Contents
