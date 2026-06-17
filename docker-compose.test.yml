@@ -4,7 +4,7 @@
 services:
   test:
     build: .
-    command: python run_all.py
+    command: python tests/run_all.py
     environment:
       - SYNTHETIC=1
       - DATA_PATH=/data/flower_data
