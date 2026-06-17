@@ -51,7 +51,7 @@ openssl x509 -in certs/client.pem -noout -subject -dates
 ./deploy/health_check.sh
 
 # Run smoke test
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 ```
 
 ### 5. Update Certificate Register

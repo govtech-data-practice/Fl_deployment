@@ -104,7 +104,7 @@ healthcare-fl/
 +-- Dockerfile                  Unified container image
 +-- docker-compose.test.yml     Local simulation testing
 +-- docker-compose.deploy.yml   TLS distributed deployment
-+-- run_tests.py                Unified test runner
++-- tests/run_tests.py                Unified test runner
 ```
 
 ---
@@ -753,8 +753,8 @@ aws configure  # set region to ap-southeast-1
 docker compose -f docker-compose.test.yml up --build
 
 # Run specific task
-docker compose -f docker-compose.test.yml run test python run_tests.py sepsis
-docker compose -f docker-compose.test.yml run test python run_tests.py chest
+docker compose -f docker-compose.test.yml run test python tests/run_tests.py sepsis
+docker compose -f docker-compose.test.yml run test python tests/run_tests.py chest
 ```
 
 ### 4.3 TLS Certificate Generation

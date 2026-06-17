@@ -27,7 +27,7 @@ Run the strategy showdown scenario:
 
 ```bash
 # This runs multiple strategies on the same data
-python run_ec2.py fraud --synthetic --strategies all
+python runners/run_ec2.py fraud --synthetic --strategies all
 ```
 
 ## Step 2: Understand Each Strategy
@@ -43,7 +43,7 @@ python run_ec2.py fraud --synthetic --strategies all
 - Better than FedAvg for moderate non-IID
 
 ```bash
-python run_ec2.py fraud --synthetic --strategies FedProx
+python runners/run_ec2.py fraud --synthetic --strategies FedProx
 ```
 
 ### SCAFFOLD
@@ -52,7 +52,7 @@ python run_ec2.py fraud --synthetic --strategies FedProx
 - Best theoretical convergence for non-IID data
 
 ```bash
-python run_ec2.py fraud --synthetic --strategies SCAFFOLD
+python runners/run_ec2.py fraud --synthetic --strategies SCAFFOLD
 ```
 
 ### FedAdam / FedYogi
@@ -61,7 +61,7 @@ python run_ec2.py fraud --synthetic --strategies SCAFFOLD
 - Can diverge on pretrained models (use with caution)
 
 ```bash
-python run_ec2.py fraud --synthetic --strategies FedAdam
+python runners/run_ec2.py fraud --synthetic --strategies FedAdam
 ```
 
 ## Step 3: Strategy Selection Guide

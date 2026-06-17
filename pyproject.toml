@@ -36,13 +36,17 @@ all = [
     "fl-reference[pets]",
 ]
 
+[project.optional-dependencies.mpc]
+crypten = ["crypten>=0.4"]
+
 [project.scripts]
-validate-manifest = "validate_manifest:main"
-dp-budget = "dp_budget:main"
+validate-manifest = "tools.validate_manifest:main"
+dp-budget = "tools.dp_budget:main"
 
 [tool.setuptools.packages.find]
 include = [
     "fl_common*",
+    "fl_pets*",
     "models*",
     "tasks*",
     "privacy*",
@@ -51,6 +55,9 @@ include = [
     "clientapp*",
     "secagg*",
     "psi*",
+    "tools*",
+    "runners*",
+    "tests*",
 ]
 
 [tool.ruff]

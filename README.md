@@ -68,13 +68,13 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Run smoke test (synthetic data, ~60 seconds)
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 
 # Validate a data manifest
-python validate_manifest.py ~/fl-deploy/data/fraud/manifest.json
+python tools/validate_manifest.py ~/fl-deploy/data/fraud/manifest.json
 
 # Check DP privacy budget
-python dp_budget.py --all --rounds 100
+python tools/dp_budget.py --all --rounds 100
 ```
 
 See [docs/quickstart.md](docs/quickstart.md) for the full step-by-step guide.
@@ -153,30 +153,42 @@ Each participant keeps data on-premise. Only encrypted model updates (or adapter
 
 ```
 fl-reference/
-  serverapp/          Coordinator (ServerApp) facade
-  clientapp/          Client (ClientApp) facade
-  fl_common/          Shared FL library (strategies, DP, SecAgg, data pipeline)
   models/
-    hfl/              Horizontal FL models (MLP, BiLSTM, DenseNet, CNN1D, etc.)
+    hfl/              Horizontal FL (MLP, BiLSTM, DenseNet, CNN1D, ...)
     vfl/              Vertical FL & Split Learning (VFL MLP, Split BiLSTM)
-    ftl/              Federated Transfer Learning (re-exports HFL/DenseNet)
+    ftl/              Federated Transfer Learning (DenseNet + ImageNet)
     llm/              LLM fine-tuning (Mistral QLoRA, OLMo LoRA)
   tasks/
-    hfl/              HFL data tasks (fraud, sepsis, ECG, chest X-ray, etc.)
+    hfl/              HFL data tasks (fraud, sepsis, ECG, chest X-ray, ...)
     llm/              LLM data tasks (gov_doc, gov_llm)
-  privacy/            Privacy attack suite and DP testing
-  secagg/             Secure aggregation configuration
-  psi/                Private Set Intersection (entity alignment for VFL)
-  secure_inference/   Secure inference demos (HE, MPC, TEE)
-  scripts/            Operational scripts (preflight, diagnostics)
-  deploy/             Deployment tooling (Docker, Terraform, mTLS)
-  infra/              Infrastructure-as-code (Terraform, CDK)
-  configs/            Environment-specific configuration (dev, staging, prod)
+  fl_pets/            PET toolkit (by lifecycle stage)
+    dp.py               During training — Opacus DP-SGD + RDP accounting
+    secagg.py            During training — Flower SecAgg+ pairwise masking
+    psi.py               Pre-training — ECDH-PSI entity alignment
+    he.py                Inference — TenSEAL CKKS homomorphic encryption
+    mpc.py               Inference — CrypTen multi-party computation
+  fl_common/          Core FL library (strategies, data pipeline)
+  privacy/            Privacy attack suite (MIA, DLG, model inversion, canary)
+  secure_inference/   Secure inference implementations (Paillier, MPC, TEE)
+  tools/              CLI tools
+    tools/ingest.py            Data ingestion pipeline
+    tools/dp_budget.py         DP privacy budget calculator
+    tools/validate_manifest.py Data manifest validator
+  runners/            FL execution entry points
+    runners/run_ec2.py           Server runner (simulation + distributed)
+    runners/run_client.py        Client runner (distributed mode)
+  tests/              Test and benchmark scripts
+    tests/run_tests.py         Strategy test runner
+    tests/run_all.py           Full model x task benchmark
+  deploy/
+    microservices/    Docker Compose (coordinator + clients)
+    distributed/      Multi-node Docker Compose (SuperLink + SuperNodes)
+    terraform/        AWS infrastructure (VPC, EC2, S3)
+  configs/            Environment configs (dev, staging, production)
+  scenarios/          Experiment definitions (YAML)
   templates/          Manifest and agreement templates
   runbooks/           Operational runbooks
-  scenarios/          Experiment definitions (YAML)
-  docs/               Documentation
-  runs/               Run records output
+  docs/tutorials/     Jupyter notebooks + deployment guides
 ```
 
 ## Models
@@ -304,7 +316,7 @@ Terraform provisions: VPC, subnets, security groups, EC2 instances (1 coordinato
 
 ### v0.1 — Foundation (Done)
 
-12 models, 10 tasks, 11 FL strategies, 4 secure inference demos, distributed across 6 EC2 GPU nodes. Production data pipeline with `ingest.py`.
+12 models, 10 tasks, 11 FL strategies, 4 secure inference demos, distributed across 6 EC2 GPU nodes. Production data pipeline with `tools/ingest.py`.
 
 ### v0.2 — Synthetic Data Engine & Integrity
 

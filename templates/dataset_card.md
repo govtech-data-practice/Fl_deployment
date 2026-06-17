@@ -45,6 +45,6 @@
 ## Provenance
 
 - **Data owner:**
-- **Ingested by:** (`python ingest.py --task <task> --input <path>`)
+- **Ingested by:** (`python tools/ingest.py --task <task> --input <path>`)
 - **Manifest checksum:**
 - **Approval:**

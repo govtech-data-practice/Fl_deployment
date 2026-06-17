@@ -27,7 +27,7 @@ services:
       - NUM_ROUNDS=${NUM_ROUNDS:-5}
       - NUM_CLIENTS=${NUM_CLIENTS:-2}
     command: >
-      python3 run_ec2.py ${FL_TASK:-fraud}
+      python3 runners/run_ec2.py ${FL_TASK:-fraud}
     ports:
       - "9092:9092"
     networks:
@@ -55,7 +55,7 @@ services:
       - FL_TASK=${FL_TASK:-fraud}
       - SYNTHETIC=1
     command: >
-      python3 run_client.py
+      python3 runners/run_client.py
         --server coordinator:9092
         --partition-id 0
         --num-clients ${NUM_CLIENTS:-2}
@@ -83,7 +83,7 @@ services:
       - FL_TASK=${FL_TASK:-fraud}
       - SYNTHETIC=1
     command: >
-      python3 run_client.py
+      python3 runners/run_client.py
         --server coordinator:9092
         --partition-id 1
         --num-clients ${NUM_CLIENTS:-2}

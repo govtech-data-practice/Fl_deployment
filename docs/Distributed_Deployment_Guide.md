@@ -53,12 +53,12 @@
 
 | Component | Role | Key Files |
 |-----------|------|-----------|
-| **FL Server** | Aggregation, strategy execution, results collection | `run_ec2.py --distributed` |
-| **FL Client** | Local training, model updates, pre-flight data check | `run_client.py` |
+| **FL Server** | Aggregation, strategy execution, results collection | `runners/run_ec2.py --distributed` |
+| **FL Client** | Local training, model updates, pre-flight data check | `runners/run_client.py` |
 | **Docker Image** | Unified runtime for server + clients | `Dockerfile` (all deps pinned) |
 | **TLS / mTLS** | Server + per-client certificates (EC P-256) | `deploy/gen_mtls_certs.sh` |
 | **Orchestrator** | Automated deploy, run, collect | `run_server_side.sh` in `docker:cli` |
-| **Data Pipeline** | Client-side ingestion, validation, manifests | `ingest.py`, `fl_common/data.py` |
+| **Data Pipeline** | Client-side ingestion, validation, manifests | `tools/ingest.py`, `fl_common/data.py` |
 | **Adapter Framework** | Federated LoRA for any HuggingFace model | `fl_common/federated_adapter.py` |
 | **Secure Inference** | CKKS homomorphic encryption (TenSEAL) | `secure_inference/tenseal_inference.py` |
 
@@ -75,7 +75,7 @@
 
 ### 1.4 Important: No Separate SuperLink
 
-`run_ec2.py --distributed` calls `start_server()` directly, which binds port 9092 and acts as the gRPC server. **Do not run a separate SuperLink container** -- it will conflict on port 9092 and cause `Port in server address 0.0.0.0:9092 is already in use`.
+`runners/run_ec2.py --distributed` calls `start_server()` directly, which binds port 9092 and acts as the gRPC server. **Do not run a separate SuperLink container** -- it will conflict on port 9092 and cause `Port in server address 0.0.0.0:9092 is already in use`.
 
 The SuperLink is only needed for idle monitoring between runs, and must be stopped before any training starts.
 
@@ -298,7 +298,7 @@ docker build -t ${FL_IMAGE}:${FL_IMAGE_TAG} -f Dockerfile .
 #     tabnet, resnet_small, vfl_mlp, split_bilstm, generic, mistral
 #   - All tasks + generic config-driven pipeline
 #   - FL strategies, privacy mechanisms, secure inference, scenarios
-#   - run_ec2.py (server), run_client.py (client)
+#   - runners/run_ec2.py (server), runners/run_client.py (client)
 #
 # Orchestrator uses docker:cli (Alpine + Docker CLI + SSH)
 ```
@@ -372,7 +372,7 @@ All containers should run with these hardening flags:
 
 ### 6.1 Data Residency
 
-In federated learning, **data stays at each site**. Each participating organization ingests its own data locally using `ingest.py`. The server never sees raw data -- only metadata manifests.
+In federated learning, **data stays at each site**. Each participating organization ingests its own data locally using `tools/ingest.py`. The server never sees raw data -- only metadata manifests.
 
 ### 6.2 Data Ingestion
 
@@ -380,16 +380,16 @@ Run on each client node:
 
 ```bash
 # Ingest local data
-python ingest.py --task sepsis --input /mnt/ehr/sepsis_cohort.csv --client-id site_a
+python tools/ingest.py --task sepsis --input /mnt/ehr/sepsis_cohort.csv --client-id site_a
 
 # Validate existing ingested data
-python ingest.py --task sepsis --validate-only
+python tools/ingest.py --task sepsis --validate-only
 
 # View manifest
-python ingest.py --show-manifest ~/fl-deploy/data/sepsis
+python tools/ingest.py --show-manifest ~/fl-deploy/data/sepsis
 ```
 
-### 6.3 What ingest.py Does
+### 6.3 What tools/ingest.py Does
 
 1. Reads input data (CSV, NPZ, or image directory)
 2. **Validates** -- checks shape, types, NaN/Inf, label distribution. Blocks on errors.
@@ -414,14 +414,14 @@ Before any training run, validate data integrity:
 
 ```bash
 # Verify manifest checksums match data files
-python ingest.py --task <TASK> --validate-only
+python tools/ingest.py --task <TASK> --validate-only
 
-# Pre-flight check in run_client.py logs:
+# Pre-flight check in runners/run_client.py logs:
 # Data: npz, 12000 samples, checksum a1b2c3d4e5f6
 # Starting FL client: task=sepsis ... data=real
 ```
 
-`run_client.py` performs these checks at startup:
+`runners/run_client.py` performs these checks at startup:
 - Manifest exists and is valid JSON
 - SHA-256 checksum of data file matches manifest
 - Feature dimensions match task config
@@ -541,7 +541,7 @@ For production, each client should have its own certificate so the server can ve
 ./deploy/gen_mtls_certs.sh --verify
 ```
 
-Client certificates are auto-detected by `run_client.py` — if `client_N.pem` and `client_N.key` exist in the certs directory, mTLS is enabled automatically. No configuration needed.
+Client certificates are auto-detected by `runners/run_client.py` — if `client_N.pem` and `client_N.key` exist in the certs directory, mTLS is enabled automatically. No configuration needed.
 
 **Limitation:** Flower's deprecated `start_server()` API does not enforce client certificate verification on the server side. The client certs are generated and transmitted but server-side validation requires migrating to Flower's `ServerApp` API.
 
@@ -613,7 +613,7 @@ ssh -i ${KEY_PATH} ec2-user@${SERVER_PUBLIC_IP} "docker logs fl-orchestrator --t
 **What the orchestrator does per task:**
 1. Kills `fl-training`, `fl-superlink`, and all client containers
 2. Starts `fl-client` containers on all clients (reconnect loop)
-3. Starts `fl-training` on server (`run_ec2.py --distributed <task>`)
+3. Starts `fl-training` on server (`runners/run_ec2.py --distributed <task>`)
 4. Monitors server container every 30s, with a per-task timeout
 5. On completion or timeout, stops clients, prints summary
 6. Moves to next task
@@ -652,7 +652,7 @@ docker run -d --name fl-training --network host \
   -e CERTS_DIR=/certs \
   -e PYTHONUNBUFFERED=1 \
   ${FL_IMAGE}:${FL_IMAGE_TAG} \
-  python3 run_ec2.py --distributed fraud
+  python3 runners/run_ec2.py --distributed fraud
 ```
 
 #### Start Clients
@@ -669,7 +669,7 @@ for ip in ${CLIENT_IPS}; do
       --cpus 14 \
       --log-opt max-size=100m \
       --log-opt max-file=5 \
-      --health-cmd 'pgrep -f run_client.py' \
+      --health-cmd 'pgrep -f runners/run_client.py' \
       --health-interval=30s \
       --health-timeout=5s \
       --health-retries=3 \
@@ -682,7 +682,7 @@ for ip in ${CLIENT_IPS}; do
       -e CERTS_DIR=/certs \
       -e PYTHONUNBUFFERED=1 \
       ${FL_IMAGE}:${FL_IMAGE_TAG} \
-      python3 run_client.py
+      python3 runners/run_client.py
   "
   PARTITION=$((PARTITION + 1))
 done
@@ -773,7 +773,7 @@ The `olmo` task uses the generic federated adapter framework (`fl_common/federat
 
 ```bash
 # Switch model by setting environment variable
-ADAPTER_PRESET=llama-3-8b FL_TASK=olmo python run_client.py
+ADAPTER_PRESET=llama-3-8b FL_TASK=olmo python runners/run_client.py
 ```
 
 Architecture inspired by FlexOLMo (AI2): base model frozen, only LoRA adapters (0.1-1% of params) are federated. Each agency trains on private data; server aggregates adapter weights.
@@ -1360,7 +1360,7 @@ aws ec2 describe-instances \
 
 ### 17.2 Client Reconnection
 
-`run_client.py` has built-in reconnection logic:
+`runners/run_client.py` has built-in reconnection logic:
 - After each strategy completes, the client waits 2s then reconnects
 - On connection failure, retries every 5s
 - After 12 consecutive failures (~60s), assumes server is done and exits
@@ -1380,7 +1380,7 @@ ssh -i ${KEY_PATH} ec2-user@<CLIENT_IP> "
     -v ~/fl-deploy/data:/data:ro \
     -e PARTITION_ID=<N> -e NUM_CLIENTS=${NUM_CLIENTS} -e FL_TASK=<TASK> \
     -e FL_SERVER=${SERVER_IP}:9092 -e CERTS_DIR=/certs \
-    ${FL_IMAGE}:${FL_IMAGE_TAG} python3 run_client.py
+    ${FL_IMAGE}:${FL_IMAGE_TAG} python3 runners/run_client.py
 "
 ```
 
@@ -1446,9 +1446,9 @@ For comprehensive PET coverage including DP variants, formal guarantees, SecAgg,
 | File | Purpose |
 |------|---------|
 | **Core** | |
-| `run_ec2.py` | Server-side experiment runner. `--distributed` enables `start_server()` |
-| `run_client.py` | Client-side runner with mTLS, pre-flight data check, reconnect loop |
-| `ingest.py` | Client-side data ingestion CLI (validation, manifest, checksums) |
+| `runners/run_ec2.py` | Server-side experiment runner. `--distributed` enables `start_server()` |
+| `runners/run_client.py` | Client-side runner with mTLS, pre-flight data check, reconnect loop |
+| `tools/ingest.py` | Client-side data ingestion CLI (validation, manifest, checksums) |
 | `Dockerfile` | Unified Docker image (all deps pinned to exact versions) |
 | **FL Framework** | |
 | `fl_common/strategies.py` | All FL strategy implementations (FedAvg, SCAFFOLD, DP, SecAgg, etc.) |
@@ -1485,7 +1485,7 @@ For comprehensive PET coverage including DP variants, formal guarantees, SecAgg,
 1. Launch a new instance in the same VPC (matching instance type)
 2. Install GPU driver + Docker + nvidia-container-toolkit (Section 4.3-4.4)
 3. Copy CA cert: `scp certs/ca.pem ec2-user@<NEW_IP>:~/fl-deploy/certs/`
-4. Ingest local data: `python ingest.py --task <TASK> --input <DATA_PATH> --client-id <SITE_ID>`
+4. Ingest local data: `python tools/ingest.py --task <TASK> --input <DATA_PATH> --client-id <SITE_ID>`
 5. Pull Docker image from ECR or load from tarball
 6. Update `cluster.env`: add IP to `CLIENT_IPS`, increment `NUM_CLIENTS`
 7. Update `PARTITION_ID` range (0 to N-1)
@@ -1494,8 +1494,8 @@ For comprehensive PET coverage including DP variants, formal guarantees, SecAgg,
 
 1. Create model: `models/<name>/server_app.py` + `client_app.py`
 2. Create data pipeline: `tasks/<name>/data.py`
-3. Add to `run_ec2.py`: new `run_<name>()` function + entry in `task_map`
-4. Add to `run_client.py`: new case in `make_client()`
+3. Add to `runners/run_ec2.py`: new `run_<name>()` function + entry in `task_map`
+4. Add to `runners/run_client.py`: new case in `make_client()`
 5. Rebuild Docker image and distribute (Section 17.4)
 6. Add scenario YAML in `scenarios/`
 7. Run single-task validation: orchestrator target `<name>`

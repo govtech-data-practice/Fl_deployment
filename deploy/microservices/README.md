@@ -7,11 +7,11 @@ Run the FL platform as containerised microservices using Docker Compose.
 ```
   docker-compose.yml
   ├── coordinator (fl-coordinator)    port 9092
-  │     └── run_ec2.py --distributed
+  │     └── runners/run_ec2.py --distributed
   ├── client_0 (fl-client-0)
-  │     └── run_client.py --server coordinator:9092
+  │     └── runners/run_client.py --server coordinator:9092
   └── client_1 (fl-client-1)
-        └── run_client.py --server coordinator:9092
+        └── runners/run_client.py --server coordinator:9092
 ```
 
 ## Quick Start

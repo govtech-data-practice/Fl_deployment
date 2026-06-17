@@ -14,16 +14,16 @@ Each task uses a different model architecture. Run a few:
 
 ```bash
 # Time-series: sepsis early warning (BiLSTM)
-python run_ec2.py sepsis --synthetic
+python runners/run_ec2.py sepsis --synthetic
 
 # Signal processing: ECG arrhythmia (BiLSTM)
-python run_ec2.py ecg --synthetic
+python runners/run_ec2.py ecg --synthetic
 
 # Unsupervised: anomaly detection (Autoencoder)
-python run_ec2.py anomaly --synthetic
+python runners/run_ec2.py anomaly --synthetic
 
 # Imaging: satellite land-use classification (ResNet-small)
-python run_ec2.py satellite --synthetic
+python runners/run_ec2.py satellite --synthetic
 ```
 
 **Checkpoint:** Each task should complete with accuracy/AUC metrics reported.
@@ -49,13 +49,13 @@ Run fraud detection with different strategies:
 
 ```bash
 # Standard FedAvg
-python run_ec2.py fraud --synthetic --strategies IID
+python runners/run_ec2.py fraud --synthetic --strategies IID
 
 # FedProx (handles non-IID data better)
-python run_ec2.py fraud --synthetic --strategies FedProx
+python runners/run_ec2.py fraud --synthetic --strategies FedProx
 
 # SCAFFOLD (variance reduction)
-python run_ec2.py fraud --synthetic --strategies SCAFFOLD
+python runners/run_ec2.py fraud --synthetic --strategies SCAFFOLD
 ```
 
 Compare the accuracy and convergence speed across strategies.
@@ -82,7 +82,7 @@ max_samples: 2000
 Run all strategies at once:
 
 ```bash
-python run_ec2.py fraud --synthetic --strategies all
+python runners/run_ec2.py fraud --synthetic --strategies all
 ```
 
 ## Step 5: Explore the Code

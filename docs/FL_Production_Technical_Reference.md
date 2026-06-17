@@ -20,7 +20,7 @@ Flower (flwr >= 1.13) is the FL framework. It was chosen for:
 
 **Limitations encountered:**
 
-1. **Deprecated `start_server()` API.** The codebase uses `start_server()` for distributed mode (`run_ec2.py`, line 199). This API is deprecated in favor of `ServerApp`/`ClientApp`. The deprecated API still works but receives no new features and may be removed. The simulation path already uses the new `ServerApp` API (line 207).
+1. **Deprecated `start_server()` API.** The codebase uses `start_server()` for distributed mode (`runners/run_ec2.py`, line 199). This API is deprecated in favor of `ServerApp`/`ClientApp`. The deprecated API still works but receives no new features and may be removed. The simulation path already uses the new `ServerApp` API (line 207).
 
 2. **No built-in round timeout enforcement.** `ServerConfig(round_timeout=120)` is passed (line 200) but Flower's `start_server()` does not reliably enforce it. In practice, a stuck client causes the server to hang indefinitely. The workaround is the orchestrator-level task timeout in `deploy/distributed/deploy.sh` (`FL_TIMEOUT_DEFAULT`, `FL_ROUND_TIMEOUT` in `cluster.env.template`, lines 62-64).
 
@@ -141,7 +141,7 @@ Implementation: `fl_common/dp.py`
 - Local DP: Clients clip+noise their own updates before sending (line 133-135 of `models/mlp/client_app.py`)
 
 **What breaks:**
-- **DP on DenseNet (8M params): AUC drops to ~0.50** (random). The noise required to protect 8M parameters at any reasonable epsilon destroys the signal. DenseNet strategies in `run_ec2.py` lines 100-108 explicitly skip DP strategies.
+- **DP on DenseNet (8M params): AUC drops to ~0.50** (random). The noise required to protect 8M parameters at any reasonable epsilon destroys the signal. DenseNet strategies in `runners/run_ec2.py` lines 100-108 explicitly skip DP strategies.
 - **DP noise on LSTM weights can cause NaN.** Fixed with `nan_to_num` sanitization in weight loading. The LSTM hidden state amplifies noise through recurrent connections.
 - **Epsilon tracking is per-run only.** `PrivacyAccountant` resets on each experiment (`self.steps = 0` on init, line 88). There is no persistent privacy budget across experiments. Running the same task 10 times with epsilon=10 each time gives total epsilon >> 10, but this is not tracked.
 
@@ -153,7 +153,7 @@ Implementation: `fl_common/dp.py`
 
 **Status: Implemented, tested.**
 
-`ingest.py` provides a CLI for local data ingestion:
+`tools/ingest.py` provides a CLI for local data ingestion:
 - Supports CSV, NPZ, and image directory formats
 - Validates schema, checks for NaN/Inf, verifies class balance
 - Generates `manifest.json` with SHA-256 checksum
@@ -168,7 +168,7 @@ Implementation: `fl_common/dp.py`
 
 ### Known Gaps
 
-- **`local_mode` vs `simulation`:** `DataConfig` has a `synthetic` flag (line 56) and `ingest.py` supports `--synthetic`. However, in distributed runs (`deploy/distributed/deploy.sh` line 397), data is mounted from the host filesystem. The `ingest.py` pipeline has never been used in a real distributed deployment; data was manually placed on EC2 instances.
+- **`local_mode` vs `simulation`:** `DataConfig` has a `synthetic` flag (line 56) and `tools/ingest.py` supports `--synthetic`. However, in distributed runs (`deploy/distributed/deploy.sh` line 397), data is mounted from the host filesystem. The `tools/ingest.py` pipeline has never been used in a real distributed deployment; data was manually placed on EC2 instances.
 
 - **No data versioning.** `manifest.json` is overwritten on re-ingest (`generate_manifest()` at line 385-446 of `fl_common/data.py`). There is no version history, no content-addressable storage, no DVC integration.
 
@@ -232,7 +232,7 @@ All nodes are in the same AWS VPC and security group. The network topology is:
 | Centralized logging | **Not implemented** | Docker `json-file` logs on each node. `deploy/distributed/deploy.sh` `cmd_logs()` (line 564) does SSH + `docker logs` |
 | GPU utilization per round | **Not tracked** | `cmd_status()` runs `nvidia-smi` on-demand but not per-round |
 | Training metrics dashboard | **Scaffolded, not tested** | `cmd_dashboard()` in `deploy/distributed/deploy.sh` (line 438) tries to start Streamlit. `dashboard.py` does not exist in the codebase |
-| Per-round metric history | **Implemented** | `MetricCapture` class in `run_ec2.py` (line 156) records per-round metrics to JSON |
+| Per-round metric history | **Implemented** | `MetricCapture` class in `runners/run_ec2.py` (line 156) records per-round metrics to JSON |
 | Log rotation | **Implemented** | Docker log rotation: `--log-opt max-size=200m --log-opt max-file=5` (line 71 of `deploy/distributed/deploy.sh`) |
 
 ---
@@ -297,13 +297,13 @@ Terraform scaffolding exists at `deploy/terraform/` (main.tf, variables.tf, outp
 
 ### Current Architecture: Monolith
 
-The reference implementation uses a monolithic architecture: one Docker image (`healthcare-fl:latest`, ~6GB) contains everything — all 12 models, all 10 task pipelines, FL strategies, privacy attacks, secure inference, and the data pipeline. The same image runs on both server and client nodes. The entry point determines the role (`run_ec2.py` for server, `run_client.py` for client).
+The reference implementation uses a monolithic architecture: one Docker image (`healthcare-fl:latest`, ~6GB) contains everything — all 12 models, all 10 task pipelines, FL strategies, privacy attacks, secure inference, and the data pipeline. The same image runs on both server and client nodes. The entry point determines the role (`runners/run_ec2.py` for server, `runners/run_client.py` for client).
 
 **Why monolith was chosen:**
 - Simplest to deploy — one image, one `docker run` command
 - No service discovery needed — server and client are the same binary
 - No inter-service communication overhead — everything in-process
-- Easy to test — `python run_ec2.py fraud` runs everything locally
+- Easy to test — `python runners/run_ec2.py fraud` runs everything locally
 - Small team — one developer, no need for service boundaries
 
 **Where monolith breaks down:**
@@ -314,7 +314,7 @@ The reference implementation uses a monolithic architecture: one Docker image (`
 | All models loaded at import time | Memory overhead on small instances | Budget deployments (t3.xlarge) |
 | Can't update one model without redeploying everything | Downtime for all tasks when fixing one model | Continuous deployment |
 | No independent scaling | Can't add more clients for one task without affecting others | Multi-task parallel runs |
-| Single failure domain | Bug in ingest.py crashes the training container | Production reliability |
+| Single failure domain | Bug in tools/ingest.py crashes the training container | Production reliability |
 
 ### Microservices Architecture for Production FL+PET
 
@@ -368,7 +368,7 @@ For government production, FL+PET should decompose into independent services:
 | **DP Accountant** | ~100MB | Privacy budget tracking, noise calibration, RDP composition | No (singleton) |
 | **HE Aggregator** | ~400MB | Paillier/CKKS encrypted aggregation via TenSEAL | Yes (per-round) |
 | **Training Worker** | ~2GB | Model training (one model per image, not all 12) | Yes (per-client) |
-| **Data Ingestor** | ~300MB | `ingest.py` as a service — validation, manifest, checksums | Yes (per-client) |
+| **Data Ingestor** | ~300MB | `tools/ingest.py` as a service — validation, manifest, checksums | Yes (per-client) |
 | **Secure Inference** | ~1GB | TenSEAL CKKS inference endpoint | Yes (per-request) |
 | **Audit Logger** | ~100MB | Append-only JSONL, HMAC signing, provenance | No (singleton) |
 | **Model Store** | ~200MB | Model versioning, checkpoint management, lineage | No (singleton) |
@@ -399,7 +399,7 @@ Do not start with microservices. The recommended migration path:
 - **Effort:** 1-2 days. Just build separate Dockerfiles per task.
 
 **Phase 2 — Extract stateless services**
-- Pull out `ingest.py` as a standalone data validation service
+- Pull out `tools/ingest.py` as a standalone data validation service
 - Pull out secure inference (`tenseal_inference.py`) as a standalone gRPC service
 - Pull out audit logging (not yet implemented) as a sidecar
 - Training worker and strategy engine remain coupled
@@ -639,14 +639,14 @@ FlexOLMo (AI2, July 2025) uses Mixture-of-Experts (MoE) where each expert is tra
 | mTLS (client certs) | **Not implemented** | No client certificate generation or verification. |
 | Certificate rotation | Tested | `deploy/rotate_certs.sh`. Includes expiry check, backup, redistribution, TLS verification. |
 | SSH orchestration | Tested | `deploy/distributed/deploy.sh`. Full lifecycle: build, distribute, run, status, logs, down. |
-| Data ingestion CLI | Tested | `ingest.py`. CSV/NPZ/image support, validation, manifest generation. |
+| Data ingestion CLI | Tested | `tools/ingest.py`. CSV/NPZ/image support, validation, manifest generation. |
 | Health check | Documented | `deploy/health_check.sh` exists (referenced but not inspected). |
 | Backup/rollback | Documented | `deploy/backup.sh`, `deploy/rollback.sh` exist. Never tested in real failure. |
 | Terraform | Scaffolded | `deploy/terraform/main.tf` etc. Never applied. |
 | Streamlit dashboard | Scaffolded | `cmd_dashboard()` in deploy script. `dashboard.py` does not exist. |
-| YAML scenarios | Tested | `run_ec2.py` `load_scenario()`. Supports single-task, multi-experiment, attack-only. |
+| YAML scenarios | Tested | `runners/run_ec2.py` `load_scenario()`. Supports single-task, multi-experiment, attack-only. |
 | Distributed mode (SuperLink) | Tested | `deploy/distributed/deploy.sh` `cmd_up()`. Server + 5 clients on EC2. |
-| Simulation mode | Tested | `run_ec2.py` default mode. `flwr.simulation.run_simulation()`. |
+| Simulation mode | Tested | `runners/run_ec2.py` default mode. `flwr.simulation.run_simulation()`. |
 | CloudWatch integration | **Not implemented** | `cluster.env.template` has `FL_LOG_DRIVER=awslogs` but never configured. |
 | S3 backup | **Not implemented** | `FL_BACKUP_S3_BUCKET` in template, never used. |
 | Container resource limits | Tested | Memory, CPU, SHM limits in `cluster.env`. Applied in deploy script. |
@@ -658,12 +658,12 @@ FlexOLMo (AI2, July 2025) uses Mixture-of-Experts (MoE) where each expert is tra
 
 | File | Purpose |
 |------|---------|
-| `run_ec2.py` | Main entry point: simulation and distributed FL runs |
+| `runners/run_ec2.py` | Main entry point: simulation and distributed FL runs |
 | `fl_common/strategies.py` | All FL strategies: FedAvg, FedProx, SCAFFOLD, SecAgg+, DP, AdaptiveWarmup, OneOwner |
 | `fl_common/dp.py` | Differential privacy: clipping, noise, RDP accountant |
 | `fl_common/secagg.py` | SecAgg+ pairwise mask scheme |
 | `fl_common/data.py` | Data pipeline: config, manifest, validation, loading |
-| `ingest.py` | Data ingestion CLI |
+| `tools/ingest.py` | Data ingestion CLI |
 | `models/mlp/client_app.py` | MLP client with FedProx, SCAFFOLD, SecAgg, DP support |
 | `privacy/test_privacy.py` | DLG + MIA attacks on BiLSTM and MLP |
 | `privacy/attack_suite.py` | Full LLM attack battery (6 attacks) |

@@ -44,7 +44,7 @@ Expected output:
 The smoke test runs FedAvg with 2 simulated clients for 3 rounds on synthetic fraud data:
 
 ```bash
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 ```
 
 This takes approximately 30-60 seconds on CPU. You should see:
@@ -56,7 +56,7 @@ This takes approximately 30-60 seconds on CPU. You should see:
 
 ```bash
 # Show privacy budget for all DP presets at 100 rounds
-python dp_budget.py --all --rounds 100
+python tools/dp_budget.py --all --rounds 100
 ```
 
 Output:
@@ -72,26 +72,26 @@ DP_RELAXED        0.5    1.0      ~25.xx
 
 ```bash
 # ECG arrhythmia classification
-python run_ec2.py ecg --synthetic
+python runners/run_ec2.py ecg --synthetic
 
 # Sepsis early warning
-python run_ec2.py sepsis --synthetic
+python runners/run_ec2.py sepsis --synthetic
 
 # Anomaly detection (autoencoder)
-python run_ec2.py anomaly --synthetic
+python runners/run_ec2.py anomaly --synthetic
 ```
 
 ## 6. Ingest Your Own Data
 
 ```bash
 # Ingest a CSV file
-python ingest.py --task fraud --input /path/to/transactions.csv --client-id site_01
+python tools/ingest.py --task fraud --input /path/to/transactions.csv --client-id site_01
 
 # Generate synthetic data for testing
-python ingest.py --task fraud --synthetic --num-samples 5000
+python tools/ingest.py --task fraud --synthetic --num-samples 5000
 
 # Validate the manifest
-python validate_manifest.py ~/fl-deploy/data/fraud/manifest.json --task fraud
+python tools/validate_manifest.py ~/fl-deploy/data/fraud/manifest.json --task fraud
 ```
 
 ## 7. Run with Multiple Strategies
@@ -100,7 +100,7 @@ Edit a scenario YAML or use the built-in configurations:
 
 ```bash
 # Run all strategies on fraud data
-python run_ec2.py fraud --synthetic --strategies all
+python runners/run_ec2.py fraud --synthetic --strategies all
 ```
 
 ## Next Steps

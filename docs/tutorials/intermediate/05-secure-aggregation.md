@@ -27,7 +27,7 @@ Without SecAgg:          With SecAgg:
 ## Step 1: Run with SecAgg
 
 ```bash
-python run_ec2.py fraud --synthetic --strategies SecAgg
+python runners/run_ec2.py fraud --synthetic --strategies SecAgg
 ```
 
 SecAgg uses pairwise deterministic masks that cancel when summed across all clients. The server receives masked updates and can only compute the aggregate — it never sees any individual client's update.
@@ -88,7 +88,7 @@ For maximum protection, use both:
 # DP adds noise to each client's update
 # SecAgg hides individual (noisy) updates from the server
 # Server only sees the aggregate of noisy updates
-python run_ec2.py fraud --synthetic --strategies SecAgg
+python runners/run_ec2.py fraud --synthetic --strategies SecAgg
 ```
 
 The order matters:

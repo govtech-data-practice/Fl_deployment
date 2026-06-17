@@ -37,16 +37,16 @@ Run the same task with different privacy levels:
 
 ```bash
 # No DP (baseline)
-python run_ec2.py fraud --synthetic --strategies IID
+python runners/run_ec2.py fraud --synthetic --strategies IID
 
 # DP-Central (server-side, DP_STRONG default)
-python run_ec2.py fraud --synthetic --strategies DP-Central
+python runners/run_ec2.py fraud --synthetic --strategies DP-Central
 
 # DP-Local (client-side, DP_MODERATE)
-python run_ec2.py fraud --synthetic --strategies DP-Local
+python runners/run_ec2.py fraud --synthetic --strategies DP-Local
 
 # DP-Local with relaxed privacy
-python run_ec2.py fraud --synthetic --strategies DP-Local-Low
+python runners/run_ec2.py fraud --synthetic --strategies DP-Local-Low
 ```
 
 **Checkpoint:** Note the accuracy for each run. You should see:
@@ -61,16 +61,16 @@ The privacy budget (epsilon) quantifies the privacy guarantee. Lower epsilon = s
 
 ```bash
 # Show all presets at 100 rounds
-python dp_budget.py --all --rounds 100
+python tools/dp_budget.py --all --rounds 100
 
 # Custom configuration
-python dp_budget.py --sigma 1.2 --rounds 50 --delta 1e-5
+python tools/dp_budget.py --sigma 1.2 --rounds 50 --delta 1e-5
 
 # See how budget grows with more rounds
-python dp_budget.py --preset DP_STRONG --rounds 10
-python dp_budget.py --preset DP_STRONG --rounds 50
-python dp_budget.py --preset DP_STRONG --rounds 100
-python dp_budget.py --preset DP_STRONG --rounds 500
+python tools/dp_budget.py --preset DP_STRONG --rounds 10
+python tools/dp_budget.py --preset DP_STRONG --rounds 50
+python tools/dp_budget.py --preset DP_STRONG --rounds 100
+python tools/dp_budget.py --preset DP_STRONG --rounds 500
 ```
 
 **Checkpoint:** Observe that epsilon grows with the number of rounds. This is the privacy "cost" of continued training.

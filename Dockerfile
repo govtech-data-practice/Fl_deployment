@@ -31,9 +31,10 @@ COPY serverapp/ /app/serverapp/
 COPY clientapp/ /app/clientapp/
 COPY secagg/ /app/secagg/
 COPY psi/ /app/psi/
-COPY scripts/ /app/scripts/
-COPY run_tests.py run_all.py run_ec2.py run_client.py ingest.py /app/
-COPY validate_manifest.py dp_budget.py /app/
+COPY fl_pets/ /app/fl_pets/
+COPY tools/ /app/tools/
+COPY runners/ /app/runners/
+COPY tests/ /app/tests/
 
 # List available models and scenarios at build time
 RUN echo "Models: bilstm, mlp, densenet, mistral, vfl_mlp, split_bilstm" && \

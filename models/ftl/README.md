@@ -27,7 +27,7 @@ FTL is a **training configuration**, not a separate model architecture. The mode
 ## Usage
 
 ```bash
-python run_ec2.py transfer --synthetic
+python runners/run_ec2.py transfer --synthetic
 ```
 
 See `scenarios/transfer_chest.yaml` for the experiment definition.

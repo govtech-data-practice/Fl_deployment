@@ -73,7 +73,7 @@ EOF
 ./deploy/distributed/deploy.sh up
 
 # Run a smoke test on the real infrastructure
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 
 # Verify everything is healthy
 ./deploy/health_check.sh

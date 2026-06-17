@@ -52,7 +52,7 @@ Two LLM models are available in `models/llm/`:
 
 ```bash
 # OLMo federated LoRA fine-tuning
-python run_ec2.py gov_doc --synthetic
+python runners/run_ec2.py gov_doc --synthetic
 ```
 
 This:

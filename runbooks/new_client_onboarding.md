@@ -50,15 +50,15 @@ nc -zv <coordinator_ip> 9092
 Participant-side setup:
 ```bash
 # Ingest and validate data
-python ingest.py --task <task> --input <data_path> --client-id <participant_id>
-python validate_manifest.py ~/fl-deploy/data/<task>/manifest.json --task <task>
+python tools/ingest.py --task <task> --input <data_path> --client-id <participant_id>
+python tools/validate_manifest.py ~/fl-deploy/data/<task>/manifest.json --task <task>
 ```
 
 ### 5. Smoke Test
 
 ```bash
 # Run smoke test including new participant
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 
 # Verify in health check
 ./deploy/health_check.sh

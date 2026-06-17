@@ -56,7 +56,7 @@ print(f"Common entities: {len(result['org_a'])}")
 ## Step 2: Run VFL Training
 
 ```bash
-python run_ec2.py vfl_fraud --synthetic
+python runners/run_ec2.py vfl_fraud --synthetic
 ```
 
 This runs VFL with 3 parties, each holding a different subset of 30 features:
@@ -83,7 +83,7 @@ VFL has higher communication cost (per-batch vs per-round) but enables collabora
 Split learning is a variant where the model is physically split:
 
 ```bash
-python run_ec2.py split_sepsis --synthetic
+python runners/run_ec2.py split_sepsis --synthetic
 ```
 
 ```

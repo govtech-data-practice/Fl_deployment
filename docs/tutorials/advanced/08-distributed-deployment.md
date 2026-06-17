@@ -75,7 +75,7 @@ Verify all checks pass:
 
 ```bash
 # Run fraud detection across the real cluster
-python run_ec2.py fraud
+python runners/run_ec2.py fraud
 ```
 
 In distributed mode:

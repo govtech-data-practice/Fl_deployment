@@ -24,7 +24,7 @@ Privacy testing verifies that your defences actually work. The deployment guide 
 ## Step 1: Run the Privacy Attack Suite
 
 ```bash
-python run_ec2.py privacy --synthetic
+python runners/run_ec2.py privacy --synthetic
 ```
 
 This runs membership inference and gradient leakage attacks on a fraud model, comparing results with and without DP.
@@ -86,11 +86,11 @@ Run the attack battery twice — once without DP, once with:
 
 ```bash
 # Without DP
-python run_ec2.py fraud --synthetic --strategies IID
+python runners/run_ec2.py fraud --synthetic --strategies IID
 # Then run attacks on the saved model
 
 # With DP
-python run_ec2.py fraud --synthetic --strategies DP-Central
+python runners/run_ec2.py fraud --synthetic --strategies DP-Central
 # Then run attacks on the DP-protected model
 ```
 

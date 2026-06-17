@@ -59,15 +59,15 @@ openssl x509 -in certs/server.pem -noout -dates
 **Symptoms:** Loss increases, accuracy near random, NaN values in metrics.
 
 **Diagnosis:**
-- Check if DP is too aggressive: `python dp_budget.py --all --rounds <N>`
-- Check for data quality issues: `python validate_manifest.py <manifest.json>`
+- Check if DP is too aggressive: `python tools/dp_budget.py --all --rounds <N>`
+- Check for data quality issues: `python tools/validate_manifest.py <manifest.json>`
 - Check for non-IID severity (label skew, quantity skew)
 
 **Resolution:**
 - Switch to `DP_MODERATE` or `DP_RELAXED` if epsilon is very low
 - Use SCAFFOLD or FedProx for non-IID data
 - Increase number of local epochs
-- Check data validation: `python ingest.py --task <task> --validate-only`
+- Check data validation: `python tools/ingest.py --task <task> --validate-only`
 
 ### 4. SecAgg Abort Rate High (>20%)
 
@@ -90,7 +90,7 @@ openssl x509 -in certs/server.pem -noout -dates
 
 **Diagnosis:**
 ```bash
-python dp_budget.py --preset <current_preset> --rounds <rounds_completed>
+python tools/dp_budget.py --preset <current_preset> --rounds <rounds_completed>
 ```
 
 **Resolution:**
@@ -135,15 +135,15 @@ docker run --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
 
 **Diagnosis:**
 ```bash
-python validate_manifest.py ~/fl-deploy/data/<task>/manifest.json --task <task>
-python ingest.py --task <task> --validate-only
+python tools/validate_manifest.py ~/fl-deploy/data/<task>/manifest.json --task <task>
+python tools/ingest.py --task <task> --validate-only
 ```
 
 **Resolution:**
 - Check feature dimension matches task requirements
 - Ensure minimum sample count (>= 10)
 - Check for excessive NaN values (> 50%)
-- Re-ingest data: `python ingest.py --task <task> --input <data>`
+- Re-ingest data: `python tools/ingest.py --task <task> --input <data>`
 
 ## Getting Help
 

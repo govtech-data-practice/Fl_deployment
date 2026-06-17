@@ -104,8 +104,8 @@ privacy:
 
 Compute budget for any configuration:
 ```bash
-python dp_budget.py --sigma 1.2 --rounds 100 --delta 1e-5
-python dp_budget.py --all --rounds 100
+python tools/dp_budget.py --sigma 1.2 --rounds 100 --delta 1e-5
+python tools/dp_budget.py --all --rounds 100
 ```
 
 ### Secure Aggregation

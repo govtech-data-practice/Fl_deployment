@@ -4,7 +4,7 @@
 
 ## What You'll Learn
 
-- Ingest data using `ingest.py`
+- Ingest data using `tools/ingest.py`
 - Understand data manifests and validation
 - Use the generic pipeline for custom datasets
 
@@ -14,8 +14,8 @@ Each participant ingests their own data locally. The server never sees raw data.
 
 ```bash
 # Generate synthetic fraud data for two "banks"
-python ingest.py --task fraud --synthetic --num-samples 5000 --client-id bank_01
-python ingest.py --task fraud --synthetic --num-samples 3000 --client-id bank_02
+python tools/ingest.py --task fraud --synthetic --num-samples 5000 --client-id bank_01
+python tools/ingest.py --task fraud --synthetic --num-samples 3000 --client-id bank_02
 ```
 
 This creates:
@@ -25,7 +25,7 @@ This creates:
 ## Step 2: Inspect the Manifest
 
 ```bash
-python ingest.py --show-manifest ~/fl-deploy/data/fraud
+python tools/ingest.py --show-manifest ~/fl-deploy/data/fraud
 ```
 
 A manifest describes the dataset without revealing any raw data:
@@ -52,7 +52,7 @@ The coordinator collects manifests (not data) to verify compatibility before tra
 ## Step 3: Validate a Manifest
 
 ```bash
-python validate_manifest.py ~/fl-deploy/data/fraud/manifest.json --task fraud
+python tools/validate_manifest.py ~/fl-deploy/data/fraud/manifest.json --task fraud
 ```
 
 **Expected output:**
@@ -79,10 +79,10 @@ You can ingest any tabular CSV. The pipeline auto-detects the schema:
 
 ```bash
 # Ingest a CSV — last column (or column named 'label') becomes the target
-python ingest.py --task generic --input /path/to/your_data.csv --client-id my_site
+python tools/ingest.py --task generic --input /path/to/your_data.csv --client-id my_site
 
 # Validate
-python ingest.py --task generic --validate-only
+python tools/ingest.py --task generic --validate-only
 ```
 
 ## Step 5: Understand the Data Flow
@@ -92,9 +92,9 @@ python ingest.py --task generic --validate-only
                     ==================
   Raw Data (CSV/NPZ)
        |
-  [ingest.py] ──> data.npz + manifest.json
+  [tools/ingest.py] ──> data.npz + manifest.json
        |
-  [validate_manifest.py] ──> PASS/FAIL
+  [tools/validate_manifest.py] ──> PASS/FAIL
        |
   [client_app.py] ──> loads data.npz, trains locally
        |
@@ -102,7 +102,7 @@ python ingest.py --task generic --validate-only
 ```
 
 Key principles:
-- **Data stays local** — `ingest.py` runs on the participant's machine
+- **Data stays local** — `tools/ingest.py` runs on the participant's machine
 - **Only metadata is shared** — manifests describe shape, not content
 - **Validation gates training** — errors in validation block training from starting
 - **Checksums ensure integrity** — SHA-256 hash verifies data hasn't changed
@@ -119,9 +119,9 @@ This template is submitted by each participant before a training run, documentin
 
 ## What You Learned
 
-- `ingest.py` converts raw data into the standardised format
+- `tools/ingest.py` converts raw data into the standardised format
 - Manifests describe datasets without exposing raw data
-- `validate_manifest.py` ensures data compatibility before training
+- `tools/validate_manifest.py` ensures data compatibility before training
 - The generic pipeline supports arbitrary tabular CSV data
 
 ## Next Steps

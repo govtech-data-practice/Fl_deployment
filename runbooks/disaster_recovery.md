@@ -53,7 +53,7 @@ aws s3 sync s3://<backup-bucket>/models/ ./models-restore/
 
 ### 5. Run Smoke Test
 ```bash
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 ```
 
 ### 6. Review

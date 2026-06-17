@@ -53,7 +53,7 @@ If PyTorch shows `[FAIL]`, ensure your virtual environment is activated.
 Run FedAvg with 2 simulated clients on synthetic fraud data:
 
 ```bash
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 ```
 
 **What's happening:**
@@ -75,7 +75,7 @@ This takes 30-60 seconds on CPU.
 The platform includes a privacy budget calculator. Try it:
 
 ```bash
-python dp_budget.py --all --rounds 100
+python tools/dp_budget.py --all --rounds 100
 ```
 
 **Expected output:**

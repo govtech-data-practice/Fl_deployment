@@ -41,7 +41,7 @@ Apply the fix. Common remediation paths:
 - Rollback: `./deploy/rollback.sh`
 
 ### 6. Verify
-- Run smoke test: `python run_ec2.py fraud --synthetic`
+- Run smoke test: `python runners/run_ec2.py fraud --synthetic`
 - Run health check: `./deploy/health_check.sh`
 
 ### 7. Resume

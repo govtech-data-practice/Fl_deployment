@@ -56,7 +56,7 @@ When a new organisation joins the federation:
 ./deploy/distributed/deploy.sh setup-client <new_ip>
 
 # 4. Smoke test
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 
 # 5. Verify
 ./deploy/health_check.sh
@@ -151,7 +151,7 @@ Tag all AWS resources with `Project`, `Environment`, and `Component` for cost al
 |---------|-----------|
 | Client can't connect | `./deploy/health_check.sh --quick` |
 | mTLS failure | `openssl verify -CAfile certs/ca.pem certs/server.pem` |
-| Training diverges | `python dp_budget.py --all --rounds <N>` |
+| Training diverges | `python tools/dp_budget.py --all --rounds <N>` |
 | SecAgg aborting | Check `secagg/config.yaml` min_quorum |
 | DP budget exhausted | Expected — review round count vs budget |
 | Image not found | `./deploy/distributed/deploy.sh distribute` |

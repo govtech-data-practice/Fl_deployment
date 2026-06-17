@@ -27,10 +27,10 @@ The guide recommends a 5-stage implementation path:
 pip install -e ".[dev]"
 
 # Run smoke test
-python run_ec2.py fraud --synthetic
+python runners/run_ec2.py fraud --synthetic
 
 # Run full test suite
-python run_tests.py
+python tests/run_tests.py
 ```
 
 No infrastructure provisioning needed. TLS and SecAgg are disabled in dev.
@@ -90,7 +90,7 @@ terraform init && terraform apply
 8. **Configure observability** (CloudWatch, dashboards)
 9. **Run smoke test over deployed infrastructure**
    ```bash
-   python run_ec2.py fraud --synthetic
+   python runners/run_ec2.py fraud --synthetic
    ```
 10. **Confirm mTLS connectivity**
     ```bash
