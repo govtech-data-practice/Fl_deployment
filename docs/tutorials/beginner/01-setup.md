@@ -27,8 +27,6 @@ pip install -e ".[dev]"
 
 ## Step 2: Verify Your Environment
 
-Verify your environment:
-
 ```bash
 python3 -c "import flwr; print('Flower', flwr.__version__)"
 python3 -c "import torch; print('PyTorch', torch.__version__, '| CUDA:', torch.cuda.is_available())"
@@ -38,15 +36,19 @@ python3 -c "import fl_pets; print('fl_pets: ok')"
 **Expected output:**
 ```
 Flower 1.30.0
-  [PASS] Docker version 28.x.x
-  [PASS] Flower 1.30.0
-  [PASS] PyTorch 2.x.x (CPU or CUDA)
-  [PASS] OpenSSL 3.x.x
+PyTorch 2.x.x | CUDA: True (or False on CPU)
+fl_pets: ok
 ```
 
-If PyTorch shows `[FAIL]`, ensure your virtual environment is activated.
+## Step 3: Generate Synthetic Data
 
-## Step 3: Run the Smoke Test
+```bash
+python data/generators/generate_all.py --task fraud --num-samples 500
+```
+
+This creates `data/samples/fraud/` with `data.npz`, `manifest.json`, and `data_card.md`.
+
+## Step 4: Run the Smoke Test
 
 Run FedAvg with 2 simulated clients on synthetic fraud data:
 
@@ -55,35 +57,17 @@ python runners/run_ec2.py fraud --synthetic
 ```
 
 **What's happening:**
-1. Synthetic data is generated for 2 virtual clients (each gets ~1000 samples)
+1. Synthetic data is partitioned across 2 virtual clients
 2. A Flower simulation runs 3 rounds of FedAvg
 3. Each round: clients train locally, send model updates, server aggregates
 4. Final accuracy is reported
 
-**Expected output (last few lines):**
-```
-Round 3/3 — accuracy: ~0.95-0.98
-Training complete. Results saved.
-```
-
 This takes 30-60 seconds on CPU.
 
-## Step 4: Check the DP Budget Calculator
-
-The platform includes a privacy budget calculator. Try it:
+## Step 5: Check the DP Budget
 
 ```bash
 python tools/dp_budget.py --all --rounds 100
-```
-
-**Expected output:**
-```
-DP Budget Summary — 100 rounds, delta=1e-05
-Preset             sigma      C    epsilon
-------------------------------------------
-DP_STRONG            1.5    1.0      55.96
-DP_MODERATE          0.8    1.0     167.76
-DP_RELAXED           0.5    1.0     411.51
 ```
 
 You'll learn what these numbers mean in [Tutorial 4: Differential Privacy](../intermediate/04-differential-privacy.md).
@@ -100,4 +84,4 @@ This is the core FL loop. Every other tutorial builds on this foundation.
 
 ## Next Steps
 
-- [Tutorial 2: Your First Model](02-first-model.md) — try different tasks and models
+- [Tutorial 2: Your First Model](02-first-model.md) — train a centralised baseline, then compare with FL

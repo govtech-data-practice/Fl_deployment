@@ -1,113 +1,134 @@
 # Tutorial 2: Your First Model
 
-**Time:** 20 minutes | **Level:** Beginner | **Prerequisites:** [Tutorial 1](01-setup.md)
+**Time:** 25 minutes | **Level:** Beginner | **Prerequisites:** [Tutorial 1](01-setup.md)
 
 ## What You'll Learn
 
-- Run different FL tasks (healthcare, finance, geospatial)
-- Understand what models and strategies are available
-- Compare strategies on the same task
+- Train a centralised baseline model (upper bound)
+- Train the same model with federated learning
+- Compare centralised vs FL results
+- Understand the accuracy/privacy trade-off
 
-## Step 1: Try Different Tasks
+> **Note:** This tutorial uses simplified training for learning purposes. In production,
+> you should add sanity checks: data validation (`tools/validate_manifest.py`),
+> privacy budget verification (`tools/dp_budget.py`), model evaluation on held-out
+> test sets, and privacy attack testing (see [Tutorial 7](../intermediate/07-privacy-attacks.md)).
 
-Each task uses a different model architecture. Run a few:
+## Step 1: Generate Sample Data
+
+```bash
+python data/generators/generate_all.py --task fraud --num-samples 500
+```
+
+## Step 2: Train a Centralised Baseline
+
+First, train on **all data pooled together** — no federation, no privacy. This is the upper bound that FL should approach:
+
+```bash
+python benchmarks/centralized/train_task.py fraud --epochs 10
+```
+
+**Expected output:**
+```
+ Epoch   Train Loss   Val Loss    Val Acc
+------------------------------------------
+     1       0.6941     0.6826     0.5400
+     2       0.6682     0.6655     0.6400
+     3       0.6405     0.6403     0.7000
+     ...
+    10       0.1930     0.2842     0.8800
+------------------------------------------
+Final: accuracy=0.8800  loss=0.2842  time=0.4s
+```
+
+Note the final accuracy (~0.88). This is the target.
+
+## Step 3: Train with Federated Learning
+
+Now train the **same model** — but data is split across 3 simulated clients:
+
+```bash
+python runners/run_ec2.py fraud --synthetic
+```
+
+Each client only sees its own data partition. Model updates (not raw data) are sent to the coordinator for aggregation.
+
+## Step 4: Compare Side-by-Side
+
+Run the benchmark comparison:
+
+```bash
+python benchmarks/run_benchmarks.py --tasks fraud --epochs 10 --fl-rounds 5
+```
+
+**Expected comparison:**
+```
+Task            Mode                   Accuracy       Time
+----------------------------------------------------------
+fraud           Centralised              0.8800      0.4s
+fraud           FL (FedAvg)              0.6120      0.2s
+```
+
+FL accuracy is lower with only 5 rounds. With 30+ rounds, FL approaches the centralised baseline.
+
+**Key insight:**
+
+| Approach | Data | Accuracy | Privacy |
+|----------|------|----------|---------|
+| Centralised | All data pooled in one place | ~0.88 (upper bound) | None |
+| Federated (5 rounds) | Data stays at each client | ~0.61 | Strong — data never moves |
+| Federated (30 rounds) | Data stays at each client | ~0.85+ | Strong — data never moves |
+
+FL trades some convergence speed for privacy — each participant's raw data never leaves their site.
+
+## Step 5: Try Different Tasks
+
+Each task uses a different model architecture:
 
 ```bash
 # Time-series: sepsis early warning (BiLSTM)
-python runners/run_ec2.py sepsis --synthetic
+python benchmarks/centralized/train_task.py sepsis --epochs 10
 
 # Signal processing: ECG arrhythmia (BiLSTM)
-python runners/run_ec2.py ecg --synthetic
+python benchmarks/centralized/train_task.py ecg --epochs 10
 
 # Unsupervised: anomaly detection (Autoencoder)
-python runners/run_ec2.py anomaly --synthetic
-
-# Imaging: satellite land-use classification (ResNet-small)
-python runners/run_ec2.py satellite --synthetic
+python benchmarks/centralized/train_task.py anomaly --epochs 10
 ```
 
-**Checkpoint:** Each task should complete with accuracy/AUC metrics reported.
+## Step 6: Model-Task Reference
 
-## Step 2: Understand the Model-Task Mapping
-
-| Task | Model | Architecture | Parameters | Data Type |
-|------|-------|-------------|-----------|-----------|
-| `fraud` | MLP | 3-layer feedforward | 50K | Tabular |
-| `sepsis` | BiLSTM | Bidirectional LSTM | 500K | Time-series |
-| `ecg` | BiLSTM | Bidirectional LSTM | 200K | Time-series |
-| `anomaly` | Autoencoder | Encoder-decoder | 500K | Tabular |
-| `mortality` | TabNet | Attention-based | 1M | Tabular |
-| `readmission` | LogReg | Logistic Regression | 10K | Tabular |
-| `satellite` | ResNet-small | Residual CNN | 5M | Images |
-| `chest_xray` | DenseNet-121 | Dense CNN | 8M | Images |
+| Task | Model | Parameters | Data Type |
+|------|-------|-----------|-----------|
+| `fraud` | MLP | 6K | Tabular (30 features) |
+| `sepsis` | BiLSTM | 41K | Time-series (48 steps, 14 features) |
+| `ecg` | BiLSTM | 41K | Time-series (250 steps, 12 features) |
+| `anomaly` | Autoencoder | 2K | Tabular (40 features) |
+| `mortality` | TabNet | 1M | Tabular (25 features) |
+| `readmission` | LogReg | 10K | Tabular (20 features) |
+| `satellite` | ResNet-small | 5M | Images (64x64x3) |
+| `chest_xray` | DenseNet-121 | 8M | Images (224x224x3) |
 
 Models live in `models/hfl/`, tasks in `tasks/hfl/`.
 
-## Step 3: Compare FL Strategies
-
-Run fraud detection with different strategies:
-
-```bash
-# Standard FedAvg
-python runners/run_ec2.py fraud --synthetic --strategies IID
-
-# FedProx (handles non-IID data better)
-python runners/run_ec2.py fraud --synthetic --strategies FedProx
-
-# SCAFFOLD (variance reduction)
-python runners/run_ec2.py fraud --synthetic --strategies SCAFFOLD
-```
-
-Compare the accuracy and convergence speed across strategies.
-
-## Step 4: Use a Scenario File
-
-Instead of command-line flags, you can define experiments in YAML:
-
-```bash
-cat scenarios/quick_fraud.yaml
-```
-
-```yaml
-name: "Quick Fraud Demo"
-task: fraud
-num_clients: 3
-num_rounds: 3
-strategies:
-  - "IID"
-synthetic: true
-max_samples: 2000
-```
-
-Run all strategies at once:
-
-```bash
-python runners/run_ec2.py fraud --synthetic --strategies all
-```
-
-## Step 5: Explore the Code
-
-Look at how a model is structured:
+## Step 7: Explore the Code
 
 ```
 models/hfl/mlp/
-  __init__.py
-  server_app.py    # Strategy factory, model initialisation
-  client_app.py    # Local training loop, data loading
+  server_app.py    # Aggregation strategy + model definition
+  client_app.py    # Local training loop + data loading
+tasks/hfl/fraud/
+  data.py          # Data loading + partitioning
 ```
 
-Key concepts:
-- **`server_app.py`** defines the aggregation strategy and global model
-- **`client_app.py`** defines local training (what each participant runs)
-- **`tasks/hfl/<task>/data.py`** handles data loading and partitioning
-
-## What You Learned
-
-- The platform supports 10+ tasks across healthcare, finance, and geospatial domains
-- Each task is paired with an appropriate model architecture
-- FL strategies (FedAvg, FedProx, SCAFFOLD) handle different data distribution scenarios
-- Experiments can be configured via CLI flags or scenario YAML files
+> **Production note:** The simplified examples above skip several steps that are
+> essential in production:
+> - **Data validation** — run `python tools/validate_manifest.py` before training
+> - **Privacy budget** — verify epsilon with `python tools/dp_budget.py`
+> - **DP + SecAgg** — enable privacy controls (see [Tutorial 4](../intermediate/04-differential-privacy.md) and [Tutorial 5](../intermediate/05-secure-aggregation.md))
+> - **Privacy testing** — run attack suite before model release (see [Tutorial 7](../intermediate/07-privacy-attacks.md))
+> - **Model card** — document model provenance (see `templates/model_card.md`)
 
 ## Next Steps
 
-- [Tutorial 3: Data Pipeline](03-data-pipeline.md) — ingest your own data
+- [Tutorial 3: Data Pipeline](03-data-pipeline.md) — ingest, validate, and manage data
