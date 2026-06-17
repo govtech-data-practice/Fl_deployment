@@ -297,7 +297,7 @@ Terraform provisions: VPC, subnets, security groups, EC2 instances (1 coordinato
 
 | Task | Model | Best Strategy | Metric | Notes |
 |------|-------|--------------|--------|-------|
-| Chest X-ray (NIH 112K) | DenseNet-121 | FedAvg | AUC 0.819 | Beats centralized (0.803) |
+| Chest X-ray (NIH 112K) | DenseNet-121 | FedAvg | AUC 0.819 | 14-label multilabel |
 | Sepsis (eICU 100K+) | BiLSTM | SCAFFOLD | Acc 0.809 | 5 clients distributed |
 | Fraud (50K) | MLP | FedAvg | Acc 0.98 | 11/11 strategies pass |
 | Mortality (eICU) | TabNet | FedAvg | Acc 0.876 | 11/11 strategies pass |
@@ -307,7 +307,7 @@ Terraform provisions: VPC, subnets, security groups, EC2 instances (1 coordinato
 
 ### Key Findings
 
-- FedAvg AUC 0.819 > centralized 0.803 on chest X-ray (implicit regularisation)
+- FedAvg AUC 0.819 on chest X-ray (14-label, NIH CXR-14 dataset)
 - DP destroys large models (DenseNet AUC->0.50) but works on small models (BiLSTM 0.65)
 - LLM canary leakage: 41.7% without DP -> 16.7% with DP
 - FedAdam/FedYogi diverge on pretrained models — FedAvg+SCAFFOLD preferred
