@@ -1,12 +1,13 @@
 # Tutorial 1: Setup & First Run
 
-**Time:** 15 minutes | **Level:** Beginner | **Requirements:** Python 3.10+, 4 GB RAM
+**Time:** 20 minutes | **Level:** Beginner | **Requirements:** Python 3.10+, 4 GB RAM
 
 ## What You'll Learn
 
 - Install the FL platform and its dependencies
 - Verify your environment is ready
-- Run your first federated learning experiment
+- Train a simple model and run inference
+- Run the test suite
 
 ## Step 1: Clone and Install
 
@@ -48,39 +49,107 @@ python data/generators/generate_all.py --task fraud --num-samples 500
 
 This creates `data/samples/fraud/` with `data.npz`, `manifest.json`, and `data_card.md`.
 
-## Step 4: Run the Smoke Test
+## Step 4: Train a Model and Run Inference
 
-Run FedAvg with 2 simulated clients on synthetic fraud data:
+Train a simple fraud detection MLP and test it:
+
+```python
+import torch
+import torch.nn as nn
+import numpy as np
+
+# Load synthetic data
+data = np.load("data/samples/fraud/data.npz")
+X = torch.from_numpy(data["X"])
+y = torch.from_numpy(data["y"])
+
+print(f"Data: {X.shape[0]} samples, {X.shape[1]} features")
+print(f"Label distribution: {y.mean():.2f} positive rate")
+
+# Build model (same architecture as models/hfl/mlp/)
+model = nn.Sequential(
+    nn.Linear(30, 64), nn.ReLU(), nn.Dropout(0.3),
+    nn.Linear(64, 64), nn.ReLU(), nn.Dropout(0.3),
+    nn.Linear(64, 1), nn.Sigmoid(),
+)
+print(f"Model: {sum(p.numel() for p in model.parameters()):,} parameters")
+
+# Train
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+loss_fn = nn.BCELoss()
+
+for epoch in range(10):
+    model.train()
+    pred = model(X).squeeze()
+    loss = loss_fn(pred, y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    
+    acc = ((pred > 0.5).float() == y).float().mean()
+    print(f"  Epoch {epoch+1:2d}: loss={loss.item():.4f}  accuracy={acc.item():.4f}")
+
+# Inference — predict on new samples
+model.eval()
+with torch.no_grad():
+    test_samples = torch.randn(5, 30)  # 5 new transactions
+    predictions = model(test_samples).squeeze()
+    
+    print("\nInference on 5 new transactions:")
+    for i, (pred, score) in enumerate(zip(predictions > 0.5, predictions)):
+        label = "FRAUD" if pred else "legitimate"
+        print(f"  Transaction {i}: {label} (score={score.item():.4f})")
+```
+
+## Step 5: Run the Test Suite
+
+Verify everything works end-to-end:
 
 ```bash
+# Run strategy tests (fraud, sepsis)
+python tests/run_tests.py fraud
+
+# Run FL smoke test
 python runners/run_ec2.py fraud --synthetic
 ```
 
-**What's happening:**
-1. Synthetic data is partitioned across 2 virtual clients
-2. A Flower simulation runs 3 rounds of FedAvg
-3. Each round: clients train locally, send model updates, server aggregates
-4. Final accuracy is reported
+**Expected:** Both commands complete without errors.
 
-This takes 30-60 seconds on CPU.
+## Step 6: Validate the PET Toolkit
 
-## Step 5: Check the DP Budget
+Quick check that all privacy-enhancing technology modules load:
 
-```bash
-python tools/dp_budget.py --all --rounds 100
+```python
+# Differential Privacy (Opacus)
+from fl_pets.dp import compute_epsilon, DP_PRESETS
+eps = compute_epsilon(noise_multiplier=1.5, sample_rate=0.01, steps=100)
+print(f"DP: epsilon={eps:.4f} at 100 steps (sigma=1.5)")
+
+# Secure Aggregation (Flower)
+from fl_pets.secagg import verify_cancellation
+import numpy as np
+result = verify_cancellation([np.array([1.0, 2.0])], num_clients=3, round_seed=42)
+print(f"SecAgg: masks cancel with error {result['max_error']:.2e}")
+
+# Homomorphic Encryption (TenSEAL)
+from fl_pets.he import create_context, encrypt, decrypt
+ctx = create_context()
+enc = encrypt(ctx, [3.14, 2.71])
+dec = decrypt(enc + enc)
+print(f"HE: encrypted [3.14, 2.71] * 2 = [{dec[0]:.4f}, {dec[1]:.4f}]")
+
+print("\nAll PET modules verified.")
 ```
-
-You'll learn what these numbers mean in [Tutorial 4: Differential Privacy](../intermediate/04-differential-privacy.md).
 
 ## What Just Happened?
 
-You ran a **federated learning simulation** where:
+You:
+1. **Installed** the FL platform with all dependencies
+2. **Generated** synthetic fraud detection data
+3. **Trained** a model and **ran inference** on new samples
+4. **Tested** the FL pipeline and PET toolkit
 
-- **No data was centralised** — each simulated client only saw its own partition
-- **Only model updates were shared** — the server never saw raw data
-- **FedAvg** aggregated updates by averaging model weights
-
-This is the core FL loop. Every other tutorial builds on this foundation.
+This confirms your environment is ready for the remaining tutorials.
 
 ## Next Steps
 
