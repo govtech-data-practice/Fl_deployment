@@ -4,7 +4,8 @@ __pycache__/
 ._*
 *.pem
 certs/
-data/
+data/samples/
+data/audit/
 results/
 logs/
 .terraform/
