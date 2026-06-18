@@ -231,22 +231,22 @@ See [docs/configuration.md](docs/configuration.md) for all parameters.
 
 Hands-on tutorials organised by experience level. See [docs/tutorials/](docs/tutorials/README.md) for the full index.
 
-### Beginner (no infra needed)
+### Beginner — Jupyter Notebooks
 
 | # | Tutorial | Time | Topic |
 |---|----------|------|-------|
-| 1 | [Setup & First Run](docs/tutorials/beginner/01-setup.md) | 15 min | Install, verify, first FL experiment |
-| 2 | [Your First Model](docs/tutorials/beginner/02-first-model.md) | 20 min | Tasks, models, strategies |
-| 3 | [Data Pipeline](docs/tutorials/beginner/03-data-pipeline.md) | 15 min | Ingest, validate, manifests |
+| 1 | [Setup & First Run](docs/tutorials/beginner/01-setup.ipynb) | 20 min | Install, verify, train, inference |
+| 2 | [Your First Model](docs/tutorials/beginner/02-first-model.ipynb) | 25 min | Centralised baseline, FL comparison, VFL |
+| 3 | [Data Pipeline](docs/tutorials/beginner/03-data-pipeline.ipynb) | 15 min | Ingest, validate, manifests |
 
-### Intermediate (single machine)
+### Intermediate — Jupyter Notebooks
 
 | # | Tutorial | Time | Topic |
 |---|----------|------|-------|
-| 4 | [Differential Privacy](docs/tutorials/intermediate/04-differential-privacy.md) | 25 min | DP presets, budget, trade-offs |
-| 5 | [Secure Aggregation](docs/tutorials/intermediate/05-secure-aggregation.md) | 15 min | SecAgg, pairwise masking |
-| 6 | [FL Strategies](docs/tutorials/intermediate/06-strategies.md) | 30 min | FedProx, SCAFFOLD, non-IID |
-| 7 | [Privacy Attacks](docs/tutorials/intermediate/07-privacy-attacks.md) | 25 min | MIA, gradient leakage, canary |
+| 4 | [Differential Privacy](docs/tutorials/intermediate/04-differential-privacy.ipynb) | 25 min | DP presets, budget, trade-offs |
+| 5 | [Secure Aggregation](docs/tutorials/intermediate/05-secure-aggregation.ipynb) | 15 min | SecAgg, pairwise masking |
+| 6 | [FL Strategies](docs/tutorials/intermediate/06-strategies.ipynb) | 30 min | FedProx, SCAFFOLD, non-IID |
+| 7 | [Privacy Attacks](docs/tutorials/intermediate/07-privacy-attacks.ipynb) | 25 min | MIA, gradient leakage, canary |
 
 ### Advanced (multi-node, cloud)
 
