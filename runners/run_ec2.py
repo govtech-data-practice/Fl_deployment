@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                     format="%(asctime)s | %(message)s")
 logger = logging.getLogger("run_ec2")
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 import torch

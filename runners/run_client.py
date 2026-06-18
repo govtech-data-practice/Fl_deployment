@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                     format="%(asctime)s | %(name)s | %(message)s")
 logger = logging.getLogger("fl_client")
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 import flwr as fl

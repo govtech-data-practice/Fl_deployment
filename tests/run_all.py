@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s |
 logger = logging.getLogger("run_all")
 
 # Ensure project root is on path
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 import torch
