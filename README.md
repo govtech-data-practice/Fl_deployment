@@ -373,3 +373,7 @@ terraform init && terraform apply          # provision AWS infra
 ```
 
 See [Tutorial 8: Distributed Deployment](tutorials/advanced/08-distributed-deployment.md) and [Tutorial 9: Terraform](tutorials/advanced/09-terraform.md).
+
+## Licence
+
+Copyright © 2026. This software includes code released under the [GovTech Public Sector Licence](LICENSE) by Government Technology Agency and other contributing Singapore public sector agencies.
