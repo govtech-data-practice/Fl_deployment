@@ -4,7 +4,7 @@ Federated Learning reference implementation with Privacy-Enhancing Technologies 
 
 ## Overview
 
-This repository provides a working implementation of cross-silo federated learning, designed as a companion to the [FL Deployment Guide](docs/tutorials/advanced/08-distributed-deployment.md). It demonstrates how organisations can train shared models across institutional boundaries **without moving raw data**.
+This repository provides a working implementation of cross-silo federated learning, designed as a companion to the [FL Deployment Guide](tutorials/advanced/08-distributed-deployment.md). It demonstrates how organisations can train shared models across institutional boundaries **without moving raw data**.
 
 Key capabilities:
 
@@ -77,7 +77,7 @@ python tools/validate_manifest.py ~/fl-deploy/data/fraud/manifest.json
 python tools/dp_budget.py --all --rounds 100
 ```
 
-See [Tutorial 1: Setup & First Run](docs/tutorials/beginner/01-setup.md) for the full step-by-step guide.
+See [Tutorial 1: Setup & First Run](tutorials/beginner/01-setup.md) for the full step-by-step guide.
 
 ## Architecture
 
@@ -188,7 +188,11 @@ fl-reference/
   scenarios/          Experiment definitions (YAML)
   templates/          Manifest and agreement templates
   runbooks/           Operational runbooks
-  docs/tutorials/     Jupyter notebooks + deployment guides
+  tutorials/
+    beginner/       Jupyter notebooks (01-setup, 02-first-model, 03-data-pipeline)
+    intermediate/   Jupyter notebooks (04-DP, 05-SecAgg, 06-strategies, 07-attacks)
+    advanced/       Deployment guides (08-distributed, 09-terraform, 10-VFL, 11-LLM, 12-ops)
+    reference/      Configuration, PET reference, production technical reference
 ```
 
 ## Models
@@ -225,45 +229,45 @@ FedAvg, FedProx, SCAFFOLD, FedAdam, FedYogi, SecAgg+, DP-Central, DP-Local, DP-L
 - `configs/` — Environment-specific configs (dev, staging, production)
 - `scenarios/` — Experiment definitions
 
-See [docs/configuration.md](docs/configuration.md) for all parameters.
+See [tutorials/reference/configuration.md](tutorials/reference/configuration.md) for all parameters.
 
 ## Tutorials
 
-Hands-on tutorials organised by experience level. See [docs/tutorials/](docs/tutorials/README.md) for the full index.
+Hands-on tutorials organised by experience level. See [tutorials/](tutorials/README.md) for the full index.
 
 ### Beginner — Jupyter Notebooks
 
 | # | Tutorial | Time | Topic |
 |---|----------|------|-------|
-| 1 | [Setup & First Run](docs/tutorials/beginner/01-setup.ipynb) | 20 min | Install, verify, train, inference |
-| 2 | [Your First Model](docs/tutorials/beginner/02-first-model.ipynb) | 25 min | Centralised baseline, FL comparison, VFL |
-| 3 | [Data Pipeline](docs/tutorials/beginner/03-data-pipeline.ipynb) | 15 min | Ingest, validate, manifests |
+| 1 | [Setup & First Run](tutorials/beginner/01-setup.ipynb) | 20 min | Install, verify, train, inference |
+| 2 | [Your First Model](tutorials/beginner/02-first-model.ipynb) | 25 min | Centralised baseline, FL comparison, VFL |
+| 3 | [Data Pipeline](tutorials/beginner/03-data-pipeline.ipynb) | 15 min | Ingest, validate, manifests |
 
 ### Intermediate — Jupyter Notebooks
 
 | # | Tutorial | Time | Topic |
 |---|----------|------|-------|
-| 4 | [Differential Privacy](docs/tutorials/intermediate/04-differential-privacy.ipynb) | 25 min | DP presets, budget, trade-offs |
-| 5 | [Secure Aggregation](docs/tutorials/intermediate/05-secure-aggregation.ipynb) | 15 min | SecAgg, pairwise masking |
-| 6 | [FL Strategies](docs/tutorials/intermediate/06-strategies.ipynb) | 30 min | FedProx, SCAFFOLD, non-IID |
-| 7 | [Privacy Attacks](docs/tutorials/intermediate/07-privacy-attacks.ipynb) | 25 min | MIA, gradient leakage, canary |
+| 4 | [Differential Privacy](tutorials/intermediate/04-differential-privacy.ipynb) | 25 min | DP presets, budget, trade-offs |
+| 5 | [Secure Aggregation](tutorials/intermediate/05-secure-aggregation.ipynb) | 15 min | SecAgg, pairwise masking |
+| 6 | [FL Strategies](tutorials/intermediate/06-strategies.ipynb) | 30 min | FedProx, SCAFFOLD, non-IID |
+| 7 | [Privacy Attacks](tutorials/intermediate/07-privacy-attacks.ipynb) | 25 min | MIA, gradient leakage, canary |
 
 ### Advanced (multi-node, cloud)
 
 | # | Tutorial | Time | Topic |
 |---|----------|------|-------|
-| 8 | [Distributed Deployment](docs/tutorials/advanced/08-distributed-deployment.md) | 45 min | EC2, mTLS, Docker |
-| 9 | [Terraform](docs/tutorials/advanced/09-terraform.md) | 30 min | AWS provisioning |
-| 10 | [Vertical FL & PSI](docs/tutorials/advanced/10-vertical-fl.md) | 25 min | VFL, entity alignment, split learning |
-| 11 | [LLM Fine-tuning](docs/tutorials/advanced/11-llm-finetuning.md) | 30 min | Federated LoRA/QLoRA |
-| 12 | [Operations](docs/tutorials/advanced/12-operations.md) | 30 min | Monitoring, certs, governance, cost |
+| 8 | [Distributed Deployment](tutorials/advanced/08-distributed-deployment.md) | 45 min | EC2, mTLS, Docker |
+| 9 | [Terraform](tutorials/advanced/09-terraform.md) | 30 min | AWS provisioning |
+| 10 | [Vertical FL & PSI](tutorials/advanced/10-vertical-fl.md) | 25 min | VFL, entity alignment, split learning |
+| 11 | [LLM Fine-tuning](tutorials/advanced/11-llm-finetuning.md) | 30 min | Federated LoRA/QLoRA |
+| 12 | [Operations](tutorials/advanced/12-operations.md) | 30 min | Monitoring, certs, governance, cost |
 
 ### Reference
 
-- [Configuration Reference](docs/configuration.md) — All configurable parameters
-- [PET Reference](docs/PET_Reference.md) — DP, SecAgg, HE, MPC, TEE details
-- [Distributed Deployment Guide](docs/Distributed_Deployment_Guide.md) — Detailed multi-node setup
-- [Operations & Cost](docs/tutorials/advanced/12-operations.md) — Monitoring, governance, cost tracking
+- [Configuration Reference](tutorials/reference/configuration.md) — All configurable parameters
+- [PET Reference](tutorials/reference/PET_Reference.md) — DP, SecAgg, HE, MPC, TEE details
+- [Distributed Deployment Guide](tutorials/reference/Distributed_Deployment_Guide.md) — Detailed multi-node setup
+- [Operations & Cost](tutorials/advanced/12-operations.md) — Monitoring, governance, cost tracking
 
 ## Infrastructure (Terraform)
 
@@ -368,4 +372,4 @@ cd deploy/terraform
 terraform init && terraform apply          # provision AWS infra
 ```
 
-See [Tutorial 8: Distributed Deployment](docs/tutorials/advanced/08-distributed-deployment.md) and [Tutorial 9: Terraform](docs/tutorials/advanced/09-terraform.md).
+See [Tutorial 8: Distributed Deployment](tutorials/advanced/08-distributed-deployment.md) and [Tutorial 9: Terraform](tutorials/advanced/09-terraform.md).

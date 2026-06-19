@@ -5,7 +5,7 @@ Hands-on tutorials organised by experience level.
 ## Beginner (Jupyter Notebooks)
 
 Start here. No cloud infrastructure needed — everything runs on a single machine.
-Open in Jupyter: `jupyter notebook docs/tutorials/beginner/`
+Open in Jupyter: `jupyter notebook tutorials/beginner/`
 
 | Tutorial | Time | What You'll Learn |
 |----------|------|-------------------|
@@ -16,7 +16,7 @@ Open in Jupyter: `jupyter notebook docs/tutorials/beginner/`
 ## Intermediate (Jupyter Notebooks)
 
 Add privacy controls and experiment with FL strategies. Still single-machine.
-Open in Jupyter: `jupyter notebook docs/tutorials/intermediate/`
+Open in Jupyter: `jupyter notebook tutorials/intermediate/`
 
 | Tutorial | Time | What You'll Learn |
 |----------|------|-------------------|
@@ -43,7 +43,7 @@ Multi-node deployment, infrastructure, and specialised FL paradigms.
 
 ## Reference
 
-- [Configuration Reference](../configuration.md)
-- [PET Reference](../PET_Reference.md)
-- [Distributed Deployment Guide](../Distributed_Deployment_Guide.md)
-- [Production Technical Reference](../FL_Production_Technical_Reference.md)
+- [Configuration Reference](../reference/configuration.md)
+- [PET Reference](../reference/PET_Reference.md)
+- [Distributed Deployment Guide](../reference/Distributed_Deployment_Guide.md)
+- [Production Technical Reference](../reference/FL_Production_Technical_Reference.md)
