@@ -9,7 +9,7 @@ This repository provides a working implementation of cross-silo federated learni
 Key capabilities:
 
 - **Horizontal FL** — same features, different samples across sites
-- **Vertical FL** — different features, same entities (with Private Set Intersection (PSI) alignment)
+- **Vertical FL** — different features, same entities (with Private Set Alignment (PSA))
 - **Split Learning** — model partitioned across sites
 - **Transfer Learning** — pretrained models fine-tuned across sites
 - **Federated LoRA** — only adapter weights are federated (for LLMs)
@@ -164,7 +164,7 @@ fl-reference/
   fl_pets/            PET toolkit (by lifecycle stage)
     dp.py               During training — Opacus DP-SGD + Rényi DP (RDP) accounting
     secagg.py            During training — Flower Secure Aggregation (SecAgg+) pairwise masking
-    psi.py               Pre-training — ECDH-PSI entity alignment
+    psa.py               Pre-training — PSA entity alignment (anonlink CLK fuzzy + exact)
     he.py                Inference — TenSEAL CKKS Homomorphic Encryption (HE)
     mpc.py               Inference — CrypTen Secure Multi-Party Computation (MPC)
   fl_common/          Core FL library (strategies, data pipeline)
@@ -258,7 +258,7 @@ Hands-on tutorials organised by experience level. See [tutorials/](tutorials/REA
 |---|----------|------|-------|
 | 8 | [Distributed Deployment](tutorials/advanced/08-distributed-deployment.md) | 45 min | EC2, mTLS, Docker |
 | 9 | [Terraform](tutorials/advanced/09-terraform.md) | 30 min | AWS provisioning |
-| 10 | [Vertical FL & PSI](tutorials/advanced/10-vertical-fl.md) | 25 min | VFL, entity alignment, split learning |
+| 10 | [Vertical FL & PSA](tutorials/advanced/10-vertical-fl.md) | 25 min | VFL, entity alignment, split learning |
 | 11 | [LLM Fine-tuning](tutorials/advanced/11-llm-finetuning.md) | 30 min | Federated LoRA/QLoRA |
 | 12 | [Operations](tutorials/advanced/12-operations.md) | 30 min | Monitoring, certs, governance, cost |
 

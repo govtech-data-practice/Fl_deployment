@@ -30,7 +30,7 @@ COPY secure_inference/ /app/secure_inference/
 COPY serverapp/ /app/serverapp/
 COPY clientapp/ /app/clientapp/
 COPY secagg/ /app/secagg/
-COPY psi/ /app/psi/
+COPY psa/ /app/psa/
 COPY fl_pets/ /app/fl_pets/
 COPY tools/ /app/tools/
 COPY runners/ /app/runners/

@@ -27,7 +27,7 @@ covering frameworks, cloud services, standards, and research.
 | **MP-SPDZ** | KU Leuven / Bristol | General MPC framework supporting 30+ protocols (SPDZ, MASCOT, semi-honest, malicious) | https://github.com/data61/MP-SPDZ |
 | **ABY** | TU Darmstadt | Mixed-protocol 2PC (Arithmetic, Boolean, Yao) with automatic conversions | https://github.com/encryptogroup/ABY |
 | **ABY3** | Visa Research | 3-party mixed-protocol MPC for ML (honest majority) | https://github.com/ladnir/aby3 |
-| **SecretFlow** | Ant Group | Full-stack privacy platform: MPC, FL, TEE, DP, PSI | https://github.com/secretflow/secretflow |
+| **SecretFlow** | Ant Group | Full-stack privacy platform: MPC, FL, TEE, DP, PSA | https://github.com/secretflow/secretflow |
 | **Rosetta** | Ant Group | TensorFlow-integrated MPC (3PC semi-honest) | https://github.com/LatticeX-Foundation/Rosetta |
 
 ### 2PC Inference Systems (purpose-built for neural network inference)

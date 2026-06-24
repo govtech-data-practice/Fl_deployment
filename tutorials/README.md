@@ -44,13 +44,13 @@ Multi-node deployment, infrastructure, and specialised FL paradigms.
 |----------|------|-------------------|
 | [8. Distributed Deployment](advanced/08-distributed-deployment.md) | 45 min | Docker Compose microservices, multi-node training |
 | [9. Infrastructure with Terraform](advanced/09-terraform.md) | 30 min | Provision AWS infra, VPC, security groups |
-| [10. Vertical FL & PSI](advanced/10-vertical-fl.md) | 25 min | VFL with split features, PSI entity alignment, split learning |
+| [10. Vertical FL & PSA](advanced/10-vertical-fl.md) | 25 min | VFL with split features, PSA entity alignment, split learning |
 | [11. LLM Federated Fine-tuning](advanced/11-llm-finetuning.md) | 30 min | Federated LoRA/QLoRA, Mistral, OLMo, adapter aggregation |
 | [12. Operations & Production](advanced/12-operations.md) | 30 min | Monitoring, cert rotation, governance, cost |
 
 ## All-Paradigms Demo
 
-- [demo_all_paradigms.ipynb](demo_all_paradigms.ipynb) — Horizontal FL (HFL) + Vertical FL (VFL) + Federated Transfer Learning (FTL) + full PET toolkit in one notebook
+- [demo_all_paradigms.ipynb](demo_all_paradigms.ipynb) — HFL + VFL + Federated Transfer Learning (FTL) + full PET toolkit in one notebook
 
 ## What to Do Next
 

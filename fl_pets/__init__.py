@@ -3,8 +3,9 @@
 Production-grade PET modules organised by FL lifecycle stage.
 
 Pre-training:
-    psi        — Entity alignment across parties before VFL training
-                 Library: OpenMined PSI / HMAC-SHA256 ECDH-PSI
+    psa        — Private Set Alignment across parties before VFL training
+                 Library: anonlink + clkhash (CSIRO Data61) for fuzzy matching,
+                 HMAC-SHA256 fallback for exact matching
 
 During training:
     dp         — Per-round differential privacy (gradient clipping + noise)
@@ -27,7 +28,7 @@ Future (roadmap v0.3+):
 
 Usage:
     # Pre-training
-    from fl_pets.psi import align_entities
+    from fl_pets.psa import align_entities_fuzzy, align_entities_exact
 
     # During training
     from fl_pets.dp import make_private, compute_epsilon
@@ -39,7 +40,7 @@ Usage:
 """
 
 # Pre-training
-from fl_pets import psi
+from fl_pets import psa
 
 # During training
 from fl_pets import dp

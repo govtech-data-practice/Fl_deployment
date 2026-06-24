@@ -92,4 +92,4 @@ terraform destroy
 
 ## Next Steps
 
-- [Tutorial 10: Vertical FL & PSI](10-vertical-fl.md) — train across vertically partitioned data
+- [Tutorial 10: Vertical FL & PSA](10-vertical-fl.md) — train across vertically partitioned data
