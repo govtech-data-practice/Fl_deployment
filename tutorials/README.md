@@ -26,12 +26,15 @@ Open in Jupyter: `jupyter notebook tutorials/beginner/`
 Add privacy controls and experiment with FL strategies. Still single-machine.
 Open in Jupyter: `jupyter notebook tutorials/intermediate/`
 
-| Tutorial | Time | What You'll Learn |
-|----------|------|-------------------|
-| [4. Differential Privacy](intermediate/04-differential-privacy.ipynb) | 25 min | DP presets, privacy budget, accuracy/privacy trade-off |
-| [5. Secure Aggregation](intermediate/05-secure-aggregation.ipynb) | 15 min | SecAgg pairwise masking, quorum, combining with DP |
-| [6. FL Strategies Deep Dive](intermediate/06-strategies.ipynb) | 30 min | FedProx, SCAFFOLD, non-IID data, choosing the right strategy |
-| [7. Privacy Attack Testing](intermediate/07-privacy-attacks.ipynb) | 25 min | MIA, gradient leakage, model inversion, canary insertion |
+Tutorials 4–6 each require Tutorial 3 but are independent of each other (can be done in any order).
+Tutorial 7 requires both Tutorial 4 and Tutorial 5.
+
+| Tutorial | Time | Prerequisites | What You'll Learn |
+|----------|------|---------------|-------------------|
+| [4. Differential Privacy](intermediate/04-differential-privacy.ipynb) | 25 min | Tutorial 3 | DP presets, privacy budget, accuracy/privacy trade-off |
+| [5. Secure Aggregation](intermediate/05-secure-aggregation.ipynb) | 15 min | Tutorial 3 | SecAgg pairwise masking, quorum, combining with DP |
+| [6. FL Strategies Deep Dive](intermediate/06-strategies.ipynb) | 30 min | Tutorial 3 | FedProx, SCAFFOLD, non-IID data, choosing the right strategy |
+| [7. Privacy Attack Testing](intermediate/07-privacy-attacks.ipynb) | 25 min | Tutorials 4 & 5 | MIA, gradient leakage, model inversion, canary insertion |
 
 ## Advanced (Deployment Guides)
 
@@ -47,7 +50,7 @@ Multi-node deployment, infrastructure, and specialised FL paradigms.
 
 ## All-Paradigms Demo
 
-- [demo_all_paradigms.ipynb](demo_all_paradigms.ipynb) — HFL + VFL + FTL + full PET toolkit in one notebook
+- [demo_all_paradigms.ipynb](demo_all_paradigms.ipynb) — Horizontal FL (HFL) + Vertical FL (VFL) + Federated Transfer Learning (FTL) + full PET toolkit in one notebook
 
 ## What to Do Next
 
@@ -59,7 +62,7 @@ After completing the tutorials:
 
 ## Reference
 
-- [Configuration Reference](../reference/configuration.md)
-- [PET Reference](../reference/PET_Reference.md)
-- [Distributed Deployment Guide](../reference/Distributed_Deployment_Guide.md)
-- [Production Technical Reference](../reference/FL_Production_Technical_Reference.md)
+- [Configuration Reference](reference/configuration.md)
+- [PET Reference](reference/PET_Reference.md)
+- [Distributed Deployment Guide](reference/Distributed_Deployment_Guide.md)
+- [Production Technical Reference](reference/FL_Production_Technical_Reference.md)

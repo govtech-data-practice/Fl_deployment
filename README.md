@@ -9,7 +9,7 @@ This repository provides a working implementation of cross-silo federated learni
 Key capabilities:
 
 - **Horizontal FL** — same features, different samples across sites
-- **Vertical FL** — different features, same entities (with PSI alignment)
+- **Vertical FL** — different features, same entities (with Private Set Intersection (PSI) alignment)
 - **Split Learning** — model partitioned across sites
 - **Transfer Learning** — pretrained models fine-tuned across sites
 - **Federated LoRA** — only adapter weights are federated (for LLMs)
@@ -43,7 +43,7 @@ Install with `pip install -e ".[pets]"` or `pip install -e ".[all]"`:
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| [TenSEAL](https://github.com/OpenMined/TenSEAL) | >= 0.3 | Homomorphic encryption (CKKS/BFV) |
+| [TenSEAL](https://github.com/OpenMined/TenSEAL) | >= 0.3 | Homomorphic Encryption (HE) — CKKS (Cheon-Kim-Kim-Song) / BFV schemes |
 | [Transformers](https://huggingface.co/transformers/) | >= 4.40 | LLM model loading (Mistral, OLMo) |
 | [PEFT](https://github.com/huggingface/peft) | >= 0.10 | LoRA/QLoRA adapter fine-tuning |
 | [Accelerate](https://github.com/huggingface/accelerate) | >= 0.30 | Distributed training utilities |
@@ -77,7 +77,7 @@ python tools/validate_manifest.py ~/fl-deploy/data/fraud/manifest.json
 python tools/dp_budget.py --all --rounds 100
 ```
 
-See [Tutorial 1: Setup & First Run](tutorials/beginner/01-setup.md) for the full step-by-step guide.
+See [Tutorial 1: Setup & First Run](tutorials/beginner/01-setup.ipynb) for the full step-by-step guide.
 
 ## Architecture
 
@@ -154,22 +154,22 @@ Each participant keeps data on-premise. Only encrypted model updates (or adapter
 ```
 fl-reference/
   models/
-    hfl/              Horizontal FL (MLP, BiLSTM, DenseNet, CNN1D, ...)
-    vfl/              Vertical FL & Split Learning (VFL MLP, Split BiLSTM)
+    hfl/              Horizontal Federated Learning — HFL (MLP, BiLSTM, DenseNet, CNN1D, ...)
+    vfl/              Vertical Federated Learning — VFL & Split Learning (VFL MLP, Split BiLSTM)
     ftl/              Federated Transfer Learning (DenseNet + ImageNet)
     llm/              LLM fine-tuning (Mistral QLoRA, OLMo LoRA)
   tasks/
     hfl/              HFL data tasks (fraud, sepsis, ECG, chest X-ray, ...)
     llm/              LLM data tasks (gov_doc, gov_llm)
   fl_pets/            PET toolkit (by lifecycle stage)
-    dp.py               During training — Opacus DP-SGD + RDP accounting
-    secagg.py            During training — Flower SecAgg+ pairwise masking
+    dp.py               During training — Opacus DP-SGD + Rényi DP (RDP) accounting
+    secagg.py            During training — Flower Secure Aggregation (SecAgg+) pairwise masking
     psi.py               Pre-training — ECDH-PSI entity alignment
-    he.py                Inference — TenSEAL CKKS homomorphic encryption
-    mpc.py               Inference — CrypTen multi-party computation
+    he.py                Inference — TenSEAL CKKS Homomorphic Encryption (HE)
+    mpc.py               Inference — CrypTen Secure Multi-Party Computation (MPC)
   fl_common/          Core FL library (strategies, data pipeline)
   privacy/            Privacy attack suite (MIA, DLG, model inversion, canary)
-  secure_inference/   Secure inference implementations (Paillier, MPC, TEE)
+  secure_inference/   Secure inference implementations (Paillier, MPC, Trusted Execution Environment (TEE))
   tools/              CLI tools
     tools/ingest.py            Data ingestion pipeline
     tools/dp_budget.py         DP privacy budget calculator
@@ -265,7 +265,7 @@ Hands-on tutorials organised by experience level. See [tutorials/](tutorials/REA
 ### Reference
 
 - [Configuration Reference](tutorials/reference/configuration.md) — All configurable parameters
-- [PET Reference](tutorials/reference/PET_Reference.md) — DP, SecAgg, HE, MPC, TEE details
+- [PET Reference](tutorials/reference/PET_Reference.md) — DP, SecAgg, HE, MPC, and TEE details
 - [Distributed Deployment Guide](tutorials/reference/Distributed_Deployment_Guide.md) — Detailed multi-node setup
 - [Operations & Cost](tutorials/advanced/12-operations.md) — Monitoring, governance, cost tracking
 

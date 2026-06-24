@@ -7,7 +7,7 @@
 > **Note:** This guide references operational shell scripts (e.g. `deploy/*.sh`) that are
 > maintained as internal tooling and not included in the public repository. For deployment,
 > use the Docker Compose configurations in `deploy/microservices/` and `deploy/distributed/`,
-> or the Terraform modules in `deploy/terraform/`. See [Tutorial 8](tutorials/advanced/08-distributed-deployment.md).
+> or the Terraform modules in `deploy/terraform/`. See [Tutorial 8](../advanced/08-distributed-deployment.md).
 
 ---
 
@@ -32,6 +32,10 @@
 17. [Troubleshooting](#17-troubleshooting)
 
 ---
+
+## Terminology
+
+This guide uses **FL Server** (or **coordinator**) to refer to the aggregation node that receives updates from clients and computes the global model. In Flower's terminology, this component is sometimes called a **SuperLink**. An **FL Client** (or **SuperNode** in Flower terminology) is a participant that trains locally and sends updates to the server.
 
 ## 1. Architecture
 
