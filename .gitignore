@@ -4,7 +4,7 @@ __pycache__/
 ._*
 *.pem
 certs/
-data/raw/
+data/raw/creditcard_2023.csv
 data/samples/
 data/audit/
 results/
