@@ -9,7 +9,7 @@ COPY fl_common/ /app/fl_common/
 COPY models/ /app/models/
 COPY tasks/ /app/tasks/
 COPY privacy/ /app/privacy/
-COPY experiments/ /app/experiments/
+COPY tests/experiments/ /app/tests/experiments/
 COPY run_tests.py run_all.py /app/
 
 ENV PYTHONUNBUFFERED=1

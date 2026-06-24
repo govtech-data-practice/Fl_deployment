@@ -24,13 +24,11 @@ COPY fl_common/ /app/fl_common/
 COPY models/ /app/models/
 COPY tasks/ /app/tasks/
 COPY privacy/ /app/privacy/
-COPY experiments/ /app/experiments/
+COPY tests/experiments/ /app/tests/experiments/
 COPY scenarios/ /app/scenarios/
 COPY secure_inference/ /app/secure_inference/
-COPY serverapp/ /app/serverapp/
-COPY clientapp/ /app/clientapp/
-COPY secagg/ /app/secagg/
-COPY psa/ /app/psa/
+# clientapp/ and serverapp/ merged into fl_common/
+# psa/ and secagg/ merged into fl_pets/
 COPY fl_pets/ /app/fl_pets/
 COPY tools/ /app/tools/
 COPY runners/ /app/runners/

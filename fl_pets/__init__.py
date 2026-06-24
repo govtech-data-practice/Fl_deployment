@@ -39,13 +39,5 @@ Usage:
     from fl_pets.mpc import encrypt_tensor
 """
 
-# Pre-training
-from fl_pets import psa
-
-# During training
-from fl_pets import dp
-from fl_pets import secagg
-
-# Inference
-from fl_pets import he
-from fl_pets import mpc
+# Submodules are imported lazily — use `from fl_pets.psa import ...` etc.
+# This avoids requiring all dependencies (opacus, tenseal, crypten) at import time.

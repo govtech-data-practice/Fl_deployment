@@ -67,7 +67,7 @@ EXPECTED_MATCHES = 8
 
 def test_exact_psi():
     """Current PSI: hash-based exact matching on concatenated fields."""
-    from psa.psa import PSAProtocol
+    from fl_pets.psa.protocol import PSAProtocol
 
     protocol = PSAProtocol(mode="exact", salt=os.urandom(32))
 

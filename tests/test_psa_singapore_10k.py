@@ -115,7 +115,7 @@ def _score(pairs, n_true):
 # ---------------------------------------------------------------
 
 def test_exact(clean, noisy, n_true):
-    from psa.psa import PSAProtocol
+    from fl_pets.psa.protocol import PSAProtocol
     protocol = PSAProtocol(mode="exact", salt=os.urandom(32))
     keys_a = ["|".join(r[f] for f in SG_FIELDS_FULL) for r in clean]
     keys_b = ["|".join(r[f] for f in SG_FIELDS_FULL) for r in noisy]

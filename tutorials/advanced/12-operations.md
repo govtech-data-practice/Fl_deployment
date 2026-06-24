@@ -44,13 +44,13 @@ openssl x509 -in server.pem -noout -subject -dates
 openssl verify -CAfile ca.pem server.pem
 ```
 
-See `runbooks/certificate_rotation.md` for the full rotation procedure.
+See `deploy/runbooks/certificate_rotation.md` for the full rotation procedure.
 
 ## Step 3: Adding a New Participant
 
 When a new organisation joins the federation:
 
-1. **Governance** — sign federation agreement (see `templates/federation_agreement.md`)
+1. **Governance** — sign federation agreement (see `deploy/templates/federation_agreement.md`)
 2. **Certificate** — issue client certificate from the CA
 3. **Network** — ensure gRPC port 9092 is accessible
 4. **Deploy** — start client container:
@@ -61,7 +61,7 @@ When a new organisation joins the federation:
    ```
 5. **Validate** — run smoke test to confirm participation
 
-See `runbooks/new_client_onboarding.md` for the full checklist.
+See `deploy/runbooks/new_client_onboarding.md` for the full checklist.
 
 ## Step 4: Incident Response
 
@@ -89,7 +89,7 @@ docker compose -f deploy/microservices/docker-compose.yml down
 | P2 | < 4 hours | Cert near expiry, SecAgg abort rate high |
 | P3 | Next business day | Non-blocking warnings |
 
-See `runbooks/incident_response.md` for full procedures.
+See `deploy/runbooks/incident_response.md` for full procedures.
 
 ## Step 5: Backup and DR
 
@@ -103,7 +103,7 @@ See `runbooks/incident_response.md` for full procedures.
 | Run records | S3 | 7 years minimum |
 | Audit logs | CloudWatch / S3 | 7 years minimum |
 
-See `runbooks/disaster_recovery.md` for DR drill procedures.
+See `deploy/runbooks/disaster_recovery.md` for DR drill procedures.
 
 ## Step 6: Governance Checkpoints
 
@@ -112,7 +112,7 @@ Before production, ensure all checkpoints are cleared:
 - [ ] Use-case approval
 - [ ] DPIA (Data Protection Impact Assessment)
 - [ ] Security review
-- [ ] Participant agreements signed (see `templates/federation_agreement.md`)
+- [ ] Participant agreements signed (see `deploy/templates/federation_agreement.md`)
 - [ ] Model governance (model card, privacy testing)
 - [ ] Operational readiness (runbooks, on-call, monitoring)
 - [ ] Production release approval

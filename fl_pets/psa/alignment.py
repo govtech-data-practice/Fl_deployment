@@ -24,7 +24,7 @@ import os
 import logging
 from typing import Dict, List
 
-from psa.psa import PSAProtocol
+from fl_pets.psa.protocol import PSAProtocol
 
 logger = logging.getLogger("psa.alignment")
 

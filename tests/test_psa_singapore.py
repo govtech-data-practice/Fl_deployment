@@ -11,7 +11,7 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
 
 from data.generators.sg_synthetic import generate_small, add_address_noise
-from psa.psa import PSAProtocol, ANONLINK_AVAILABLE
+from fl_pets.psa.protocol import PSAProtocol, ANONLINK_AVAILABLE
 
 sgh_records, ttsh_records, EXPECTED_MATCHES = generate_small()
 
