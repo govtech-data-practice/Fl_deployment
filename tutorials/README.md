@@ -48,6 +48,19 @@ Multi-node deployment, infrastructure, and specialised FL paradigms.
 | [11. LLM Federated Fine-tuning](advanced/11-llm-finetuning.md) | 30 min | Federated LoRA/QLoRA, Mistral, OLMo, adapter aggregation |
 | [12. Operations & Production](advanced/12-operations.md) | 30 min | Monitoring, cert rotation, governance, cost |
 
+## PET Tools (Jupyter Notebooks)
+
+Focused, tool-level tutorials for each Privacy-Enhancing Technology.
+Open in Jupyter: `jupyter notebook tutorials/pets/`
+
+| PET | Tutorial | Library |
+|-----|----------|---------|
+| Private Set Alignment | [PSA: Entity Alignment](pets/psa-entity-alignment.ipynb) | anonlink + clkhash (Data61) |
+| Differential Privacy | [DP: Gradient Privacy](pets/dp-gradient-privacy.ipynb) | Opacus (Meta) |
+| Secure Aggregation | [SecAgg: Update Masking](pets/secagg-update-masking.ipynb) | Flower SecAgg+ |
+| Homomorphic Encryption | [HE: Encrypted Inference](pets/he-encrypted-inference.ipynb) | TenSEAL (OpenMined) |
+| Multi-Party Computation | [MPC: Secure Inference](pets/mpc-secure-inference.ipynb) | CrypTen (Meta) |
+
 ## All-Paradigms Demo
 
 - [demo_all_paradigms.ipynb](demo_all_paradigms.ipynb) — HFL + VFL + Federated Transfer Learning (FTL) + full PET toolkit in one notebook
