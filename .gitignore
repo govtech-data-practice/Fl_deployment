@@ -5,6 +5,7 @@ __pycache__/
 *.pem
 certs/
 data/raw/creditcard_2023.csv
+data/raw/*.zip
 data/samples/
 data/audit/
 results/

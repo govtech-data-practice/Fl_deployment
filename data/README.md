@@ -6,10 +6,10 @@ Raw datasets, processed samples, and synthetic data generators for FL experiment
 
 ```
 data/
-  raw/                   Raw source datasets (not committed to git)
-    creditcard_2023.csv    568K credit card transactions (Kaggle CC Fraud 2023)
-    creditcard_2023.zip    Compressed archive of above
-    METABRIC_RNA_Mutation.csv  1,904 breast cancer patients (clinical + RNA + mutations)
+  raw/                   Raw source datasets
+    creditcard_2023_sample_25k.csv  25K sample of CC fraud transactions (committed, 13 MB)
+    creditcard_2023.csv             Full 568K dataset (gitignored, download from Kaggle)
+    METABRIC_RNA_Mutation.csv       1,904 breast cancer patients (committed, 8 MB)
 
   samples/               Processed, ready-to-use datasets (not committed to git)
     fraud/                 Real: 568K transactions, 29 features (V1-V28 + Amount)
@@ -35,7 +35,7 @@ data/
 
 | Dataset | Records | Features | Source | Licence |
 |---------|---------|----------|--------|---------|
-| **Credit Card Fraud 2023** | 568,630 | 29 (V1-V28 + Amount) | [Kaggle](https://www.kaggle.com/datasets/nelgiriyewithana/credit-card-fraud-detection-dataset-2023) | CC BY 4.0 |
+| **Credit Card Fraud 2023** | 568,630 (25K sample included) | 30 (V1-V28 + Amount + pad) | [Kaggle](https://www.kaggle.com/datasets/nelgiriyewithana/credit-card-fraud-detection-dataset-2023) | CC BY 4.0 |
 | **METABRIC Breast Cancer** | 1,904 | 693 (31 clinical + 489 RNA + 173 mutations) | [cBioPortal](https://www.cbioportal.org/study/summary?id=brca_metabric) | Open access |
 
 ## Quick Start
