@@ -60,13 +60,18 @@ def _hmac_hash(salt: bytes, identifier: str) -> bytes:
 
 def _intersect_two(hashes_a: List[bytes],
                    hashes_b: List[bytes]) -> Tuple[List[int], List[int]]:
-    """Find matching indices between two hashed sets."""
-    set_b = {h: idx for idx, h in enumerate(hashes_b)}
+    """Find matching indices between two hashed sets (1:1, first match wins)."""
+    set_b = {}
+    for idx, h in enumerate(hashes_b):
+        if h not in set_b:
+            set_b[h] = idx
     idx_a, idx_b = [], []
+    matched_b = set()
     for ia, h in enumerate(hashes_a):
-        if h in set_b:
+        if h in set_b and set_b[h] not in matched_b:
             idx_a.append(ia)
             idx_b.append(set_b[h])
+            matched_b.add(set_b[h])
     return idx_a, idx_b
 
 

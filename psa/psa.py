@@ -50,46 +50,65 @@ except ImportError:
 
 # ----- Default CLK schema for healthcare quasi-identifiers -----
 
-DEFAULT_CLK_SCHEMA = {
-    "version": 3,
-    "clkConfig": {
-        "l": 1024,
-        "xor_folds": 0,
-        "kdf": {
-            "type": "HKDF",
-            "hash": "SHA256",
-            "info": "cHNhLWhlYWx0aGNhcmU=",  # base64("psa-healthcare")
-            "salt": "c2VjdXJlLXNhbHQ=",        # base64("secure-salt")
-            "keySize": 64
-        }
-    },
-    "features": [
-        {
-            "identifier": "name",
-            "format": {"type": "string", "encoding": "utf-8"},
-            "hashing": {
-                "comparison": {"type": "ngram", "n": 2},
-                "strategy": {"bitsPerFeature": 300},
+def _make_default_schema(salt_b64: str = None, info_b64: str = None) -> dict:
+    """Build a default CLK schema with per-session KDF parameters.
+
+    Args:
+        salt_b64: Base64-encoded KDF salt. If None, generates a random 16-byte salt.
+        info_b64: Base64-encoded KDF info. If None, generates a random 8-byte info.
+    """
+    import base64 as _b64
+    if salt_b64 is None:
+        salt_b64 = _b64.b64encode(__import__("os").urandom(16)).decode()
+    if info_b64 is None:
+        info_b64 = _b64.b64encode(__import__("os").urandom(8)).decode()
+    return {
+        "version": 3,
+        "clkConfig": {
+            "l": 1024,
+            "xor_folds": 1,  # XOR folding: basic countermeasure against frequency attacks
+            "kdf": {
+                "type": "HKDF",
+                "hash": "SHA256",
+                "info": info_b64,
+                "salt": salt_b64,
+                "keySize": 64,
             },
         },
-        {
-            "identifier": "dob",
-            "format": {"type": "string", "encoding": "utf-8"},
-            "hashing": {
-                "comparison": {"type": "ngram", "n": 1},
-                "strategy": {"bitsPerFeature": 200},
+        "features": [
+            {
+                "identifier": "name",
+                "format": {"type": "string", "encoding": "utf-8"},
+                "hashing": {
+                    "comparison": {"type": "ngram", "n": 2},
+                    "strategy": {"bitsPerFeature": 200},
+                },
             },
-        },
-        {
-            "identifier": "gender",
-            "format": {"type": "enum", "values": ["M", "F", "O", "U"]},
-            "hashing": {
-                "comparison": {"type": "exact"},
-                "strategy": {"bitsPerFeature": 100},
+            {
+                "identifier": "dob",
+                "format": {"type": "string", "encoding": "utf-8"},
+                "hashing": {
+                    "comparison": {"type": "ngram", "n": 1},
+                    "strategy": {"bitsPerFeature": 100},
+                },
             },
-        },
-    ],
-}
+            {
+                "identifier": "gender",
+                "format": {"type": "enum", "values": ["M", "F", "O", "U"]},
+                "hashing": {
+                    "comparison": {"type": "exact"},
+                    "strategy": {"bitsPerFeature": 50},
+                },
+            },
+        ],
+    }
+
+
+# Backward-compatible constant (WARNING: uses fixed KDF params — for tests only)
+DEFAULT_CLK_SCHEMA = _make_default_schema(
+    salt_b64="c2VjdXJlLXNhbHQ=",  # base64("secure-salt")
+    info_b64="cHNhLWhlYWx0aGNhcmU=",  # base64("psa-healthcare")
+)
 
 
 class PSAProtocol:
@@ -153,6 +172,8 @@ class PSAProtocol:
         """
         if self.mode != "fuzzy":
             raise RuntimeError("encode_clks() is only available in fuzzy mode")
+        if not records:
+            return []
 
         buf = StringIO()
         writer = csv.writer(buf)
@@ -216,15 +237,27 @@ class PSAProtocol:
     def intersect(hashes_a: List[bytes], hashes_b: List[bytes]) -> Tuple[List[int], List[int]]:
         """Compute intersection indices between two hashed sets (exact mode).
 
+        1:1 matching: each hash in B is matched at most once (first occurrence
+        in A wins). Duplicate hashes within a party are logged as warnings.
+
         Returns:
             (indices_a, indices_b): Matching indices in each party's original list.
         """
-        set_b = {h: idx for idx, h in enumerate(hashes_b)}
-        indices_a, indices_b = [], []
-        for idx_a, h in enumerate(hashes_a):
+        # Build index for B; warn on duplicates
+        set_b = {}
+        for idx, h in enumerate(hashes_b):
             if h in set_b:
+                logger.warning("Duplicate hash in party B at indices %d and %d", set_b[h], idx)
+            else:
+                set_b[h] = idx
+
+        indices_a, indices_b = [], []
+        matched_b = set()
+        for idx_a, h in enumerate(hashes_a):
+            if h in set_b and set_b[h] not in matched_b:
                 indices_a.append(idx_a)
                 indices_b.append(set_b[h])
+                matched_b.add(set_b[h])
 
         match_rate = len(indices_a) / max(len(hashes_a), 1)
         logger.info(

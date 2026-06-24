@@ -474,8 +474,6 @@ def generate_records(n: int = 10000, seed: int = 42, hard_negatives: bool = True
         postal = random.randint(100000, 829999)
         addr_a = f"Blk {blk} {town} {tn} #{fl:02d}-{u_a:03d} S({postal:06d})"
         addr_b = f"Blk {blk} {town} {tn} #{fl:02d}-{u_a+1:03d} S({postal:06d})"
-        for g, addr in [("M", addr_a), ("F", addr_b)]:
-            pass
         age_a, age_b = random.randint(18, 95), random.randint(18, 95)
         g_a, g_b = random.choice(["M", "F"]), random.choice(["M", "F"])
         clean.append({"name": f"{random.choice(CHINESE_SURNAMES)} {random.choice(CHINESE_MALE_NAMES if g_a == 'M' else CHINESE_FEMALE_NAMES)}",
@@ -502,3 +500,141 @@ def generate_records(n: int = 10000, seed: int = 42, hard_negatives: bool = True
 
     n_hard = n_same_name + n_families + n_neighbours + n_movers
     return clean, noisy, n, n_hard
+
+
+# ---------------------------------------------------------------
+# Multi-party generator (3-4 hospitals)
+# ---------------------------------------------------------------
+
+def generate_multiparty(
+    n: int = 1000,
+    n_parties: int = 4,
+    overlap: float = 0.6,
+    seed: int = 42,
+) -> Tuple[Dict[str, List[Dict]], int]:
+    """Generate multi-party records with partial overlap.
+
+    Simulates n_parties hospitals where each hospital has a subset of a
+    shared patient population. Each hospital independently introduces
+    noise to names and addresses.
+
+    Args:
+        n: Total patient population size.
+        n_parties: Number of hospitals (2-6).
+        overlap: Fraction of patients shared across ALL parties (0.0-1.0).
+                 Remaining patients are distributed randomly.
+        seed: Random seed.
+
+    Returns:
+        (party_records, n_common)
+        party_records: dict of party_name -> list of record dicts
+        n_common: number of patients present in ALL parties (ground truth)
+    """
+    random.seed(seed)
+    ethnic_weights = [0.74, 0.13, 0.09, 0.04]
+    ethnicities = ["chinese", "malay", "indian", "eurasian"]
+
+    party_names = [
+        "SGH", "TTSH", "NUH", "KTPH", "CGH", "NTFGH"
+    ][:n_parties]
+
+    # Generate the full patient population with canonical records
+    population = []
+    for _ in range(n):
+        eth = random.choices(ethnicities, weights=ethnic_weights, k=1)[0]
+        gender = random.choice(["M", "F"])
+        age = random.randint(18, 95)
+        age_factor = max(0.3, 1.0 - abs(age - 45) / 40)
+        income = max(800, min(25000, int(round(random.gauss(4500, 2500) * age_factor / 100) * 100)))
+        rec_clean, _ = _generate_record(eth, gender, age, income)
+        population.append((rec_clean, eth, gender, age, income))
+
+    # Decide which patients appear at which hospital
+    n_common = int(n * overlap)
+    common_indices = set(range(n_common))  # first n_common are in ALL parties
+
+    # Remaining patients are randomly assigned to 1-3 parties each
+    remaining = list(range(n_common, n))
+    random.shuffle(remaining)
+
+    patient_presence = {i: set(range(n_parties)) for i in common_indices}
+    for idx in remaining:
+        # Assign to 1 to (n_parties - 1) random parties
+        k = random.randint(1, n_parties - 1)
+        assigned = set(random.sample(range(n_parties), k))
+        patient_presence[idx] = assigned
+
+    # Generate noisy records for each party.
+    # Each party gets the SAME base record with INDEPENDENT noise applied.
+    party_records = {name: [] for name in party_names}
+    party_index_map = {name: {} for name in party_names}
+
+    for party_idx, party_name in enumerate(party_names):
+        local_idx = 0
+        for global_idx in range(n):
+            if party_idx not in patient_presence[global_idx]:
+                continue
+
+            rec_clean, eth, gender, age, income = population[global_idx]
+
+            # Apply independent noise to the canonical record
+            noisy_name = rec_clean["name"]
+            noisy_address = add_address_noise(rec_clean["address"])
+
+            # Name noise by ethnicity
+            if eth == "chinese":
+                parts = noisy_name.split(" ", 1)
+                if len(parts) == 2:
+                    surname, given = parts
+                    if surname in CHINESE_SURNAME_VARIANTS and random.random() < 0.1:
+                        surname = random.choice(CHINESE_SURNAME_VARIANTS[surname])
+                    given = add_name_noise(given, is_chinese_given=True)
+                    noisy_name = f"{surname} {given}"
+            elif eth == "malay":
+                if "bin " in noisy_name:
+                    noisy_name = noisy_name.replace("bin ", random.choice(MALAY_PREFIXES_MALE) + " ", 1)
+                    for orig in MUHAMMAD_VARIANTS:
+                        if noisy_name.startswith(orig):
+                            noisy_name = random.choice(MUHAMMAD_VARIANTS) + noisy_name[len(orig):]
+                            break
+                elif "bte " in noisy_name:
+                    noisy_name = noisy_name.replace("bte ", random.choice(MALAY_PREFIXES_FEMALE) + " ", 1)
+            elif eth == "indian":
+                if "s/o " in noisy_name:
+                    noisy_name = noisy_name.replace("s/o ", random.choice(INDIAN_SON_OF) + " ", 1)
+                elif "d/o " in noisy_name:
+                    noisy_name = noisy_name.replace("d/o ", random.choice(INDIAN_DAUGHTER_OF) + " ", 1)
+                    for orig, repl in [("Kavitha", "Kavita"), ("Lakshmi", "Laxmi"), ("Anitha", "Anita")]:
+                        if noisy_name.startswith(orig) and random.random() < 0.3:
+                            noisy_name = repl + noisy_name[len(orig):]
+                            break
+            elif eth == "eurasian":
+                if "De " in noisy_name and random.random() < 0.3:
+                    noisy_name = noisy_name.replace("De ", "de ", 1)
+
+            # Postal code format noise
+            if "S(" in noisy_address:
+                try:
+                    postal_str = noisy_address.split("S(")[-1].rstrip(")")
+                    postal_int = int(postal_str)
+                    noisy_address = noisy_address[:noisy_address.index("S(")] + make_postal(postal_int)
+                except ValueError:
+                    pass
+
+            noisy_age = age + random.choice([-1, 1]) if random.random() < 0.05 else age
+            noisy_income = int(round(income / 500) * 500) if random.random() < 0.1 else income
+
+            rec_noisy = {
+                "name": noisy_name,
+                "dob": rec_clean["dob"],
+                "address": noisy_address,
+                "gender": rec_clean["gender"],
+                "age": str(noisy_age),
+                "income": str(noisy_income),
+            }
+
+            party_records[party_name].append(rec_noisy)
+            party_index_map[party_name][local_idx] = global_idx
+            local_idx += 1
+
+    return party_records, n_common, party_index_map
