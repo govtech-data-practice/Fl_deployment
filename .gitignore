@@ -22,8 +22,16 @@ data/raw/creditcard_2023.csv
 data/samples/
 data/audit/
 
+# Credentials / secrets
+ca.crt
+client.key
+*.pem
+
 # Runtime / generated
 certs/
+experiment_results*.csv
+metrics_*.csv
+full_log_*.txt
 flower_data/
 results/
 logs/
