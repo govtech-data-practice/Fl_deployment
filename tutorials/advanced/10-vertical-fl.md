@@ -1,10 +1,10 @@
-# Tutorial 10: Vertical FL & PSI
+# Tutorial 10: Vertical FL & PSI (Private Set Intersection)
 
-**Time:** 25 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 6](../intermediate/06-strategies.md)
+**Time:** 25 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 6](../intermediate/06-strategies.ipynb)
 
 ## What You'll Learn
 
-- Difference between HFL and VFL
+- Difference between HFL (Horizontal Federated Learning) and VFL (Vertical Federated Learning)
 - Align entities across parties using Private Set Intersection (PSI)
 - Run VFL training with vertically partitioned data
 - Understand split learning

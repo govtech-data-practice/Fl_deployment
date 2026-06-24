@@ -29,7 +29,7 @@ ssh ec2-user@<node_ip> "docker ps && nvidia-smi"
 
 ## Step 2: Certificate Management
 
-Generate mTLS certificates using OpenSSL:
+Generate mTLS (mutual Transport Layer Security) certificates using OpenSSL:
 
 ```bash
 # Generate CA
@@ -110,7 +110,7 @@ See `runbooks/disaster_recovery.md` for DR drill procedures.
 Before production, ensure all checkpoints are cleared:
 
 - [ ] Use-case approval
-- [ ] Data protection impact assessment (DPIA)
+- [ ] DPIA (Data Protection Impact Assessment)
 - [ ] Security review
 - [ ] Participant agreements signed (see `templates/federation_agreement.md`)
 - [ ] Model governance (model card, privacy testing)

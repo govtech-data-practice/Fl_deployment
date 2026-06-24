@@ -25,6 +25,10 @@ enable_tls      = true
 allowed_ssh_cidrs = ["YOUR_IP/32"]
 ```
 
+> **Prerequisite:** Create the S3 bucket specified in `data_s3_bucket` before running `terraform apply`. The bucket must be in the same AWS region as your deployment.
+
+> **Cost warning:** Running `terraform apply` will provision AWS resources (EC2 instances, VPC, etc.) that incur ongoing costs. Remember to run `terraform destroy` (Step 6) when you are done to avoid unexpected charges.
+
 ## Step 2: Initialise and Plan
 
 ```bash
@@ -48,7 +52,7 @@ terraform apply
 Note the outputs:
 ```
 superlink_public_ip = "54.x.x.x"
-supernode_public_ips = ["10.0.1.10", "10.0.1.11", "10.0.1.12"]
+supernode_public_ips = ["54.x.x.x", "54.x.x.y", "54.x.x.z"]
 ```
 
 ## Step 4: Deploy Containers

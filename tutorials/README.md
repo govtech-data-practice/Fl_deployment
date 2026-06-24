@@ -2,6 +2,14 @@
 
 Hands-on tutorials organised by experience level.
 
+## Prerequisites
+
+- **Python 3.10+** required for all tutorials
+- Run `pip install -e ".[dev]"` before starting (see Tutorial 1)
+- **GPU** is optional — only needed for Tutorial 11 (LLM fine-tuning), and beneficial for Tutorials 8–9
+- **Docker** is required only for Tutorials 8–9 and 12
+- **Terraform + AWS account** required only for Tutorial 9
+
 ## Beginner (Jupyter Notebooks)
 
 Start here. No cloud infrastructure needed — everything runs on a single machine.
@@ -40,6 +48,14 @@ Multi-node deployment, infrastructure, and specialised FL paradigms.
 ## All-Paradigms Demo
 
 - [demo_all_paradigms.ipynb](demo_all_paradigms.ipynb) — HFL + VFL + FTL + full PET toolkit in one notebook
+
+## What to Do Next
+
+After completing the tutorials:
+
+- **Production deployments** — see the [reference docs](reference/) for configuration, PET details, and production operations
+- **Pre-built experiments** — explore the `scenarios/` directory for ready-to-run experiment configurations
+- **Contributing** — open an issue or pull request on GitHub
 
 ## Reference
 

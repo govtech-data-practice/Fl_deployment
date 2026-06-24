@@ -1,6 +1,8 @@
 # Tutorial 8: Distributed Deployment
 
-**Time:** 45 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 7](../intermediate/07-privacy-attacks.md), Docker installed
+**Time:** 45 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 7](../intermediate/07-privacy-attacks.ipynb), Docker installed
+
+> **Note:** This tutorial uses gRPC (Google Remote Procedure Call) for communication between FL nodes. gRPC is installed automatically with Flower.
 
 ## What You'll Learn
 

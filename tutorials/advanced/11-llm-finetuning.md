@@ -1,10 +1,12 @@
 # Tutorial 11: LLM Federated Fine-tuning
 
-**Time:** 30 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 4](../intermediate/04-differential-privacy.md), GPU recommended
+**Time:** 30 minutes | **Level:** Advanced | **Prerequisites:** [Tutorial 4](../intermediate/04-differential-privacy.ipynb), GPU recommended
+
+> **GPU requirements:** A GPU with at least 16 GB VRAM is recommended (e.g., NVIDIA T4 or L4). QLoRA 4-bit quantisation reduces memory usage but training will be very slow on CPU. Expect several GB of model weight downloads on first run.
 
 ## What You'll Learn
 
-- Why federate LLM fine-tuning (LoRA/QLoRA)
+- Why federate LLM fine-tuning (LoRA — Low-Rank Adaptation / QLoRA — Quantised LoRA)
 - Run federated LoRA on Mistral 7B
 - Understand adapter aggregation
 - Measure privacy leakage in LLMs
