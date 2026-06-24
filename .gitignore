@@ -4,6 +4,7 @@ __pycache__/
 ._*
 *.pem
 certs/
+data/raw/
 data/samples/
 data/audit/
 results/
