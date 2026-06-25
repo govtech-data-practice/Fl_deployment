@@ -7,7 +7,7 @@ This repo provides two things:
 1. **Tutorials** — hands-on Jupyter notebooks (beginner to advanced) covering FL paradigms, privacy controls, secure inference, and distributed deployment
 2. **PET adapter code** (`fl_pets/`) — production-ready modules that plug PETs (DP, SecAgg, PSA, HE, MPC) into a Flower FL pipeline without modifying the core training logic
 3. **Multi-server deployment** (`deploy/distributed/`) — Docker Compose configs for distributed FL training across multiple EC2 nodes with mTLS, plus Terraform modules for AWS provisioning
-4. **Microservices architecture** (`deploy/microservices/`) — containerised coordinator + client setup for single-machine or multi-machine deployment via Docker Compose
+4. **Microservices architecture** ([`deploy/ARCHITECTURE.md`](deploy/ARCHITECTURE.md)) — containerised HFL and VFL deployment with DP accountant, SecAgg orchestrator, PSA service, audit logging, and model registry
 
 Key capabilities:
 
