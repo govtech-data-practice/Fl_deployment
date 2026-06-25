@@ -6,13 +6,12 @@ All configurable parameters for the FL platform.
 
 | File | Format | Purpose |
 |------|--------|---------|
-| `env.example.yaml` | YAML | Master configuration template |
+| `deploy/env.example.yaml` | YAML | Master configuration template |
 | `deploy/cluster.env.template` | Shell env | Legacy deployment configuration |
 | `deploy/configs/dev.yaml` | YAML | Development environment |
 | `deploy/configs/staging.yaml` | YAML | Staging environment |
 | `deploy/configs/production.yaml` | YAML | Production environment |
 | `scenarios/*.yaml` | YAML | Experiment definitions |
-| `secagg/config.yaml` | YAML | Secure aggregation parameters |
 
 ## Infrastructure Parameters
 
