@@ -60,6 +60,27 @@ include = [
     "tests*",
 ]
 
+[tool.flwr.app]
+publisher = "govtech"
+
+[tool.flwr.app.components]
+serverapp = "runners.server_app:app"
+clientapp = "runners.client_app:app"
+
+[tool.flwr.app.config]
+task = "fraud"
+num-rounds = 10
+num-clients = 2
+
+[tool.flwr.federations.local-sim]
+options.num-supernodes = 2
+options.backend.client-resources.num-cpus = 2
+options.backend.client-resources.num-gpus = 0.0
+
+[tool.flwr.federations.distributed]
+address = "127.0.0.1:9093"
+insecure = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
