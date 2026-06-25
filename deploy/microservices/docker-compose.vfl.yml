@@ -1,0 +1,424 @@
+# VFL Microservices — Full Architecture
+# ========================================
+# Coordinator + 3 Parties + PSA + DP Service + Audit Logger + Monitoring
+#
+# Usage:
+#   docker compose -f docker-compose.vfl.yml up -d
+#   docker compose -f docker-compose.vfl.yml logs -f coordinator
+#
+# Ports:
+#   9092  — Coordinator gRPC (Flower)
+#   8080  — REST Gateway
+#   8084  — PSA Service
+#   8085  — DP Service
+#   8086  — Audit Logger
+#   9090  — Prometheus
+#   3000  — Grafana
+
+services:
+
+  # ================================================================
+  # Coordinator — VFL top model + labels (active party)
+  # ================================================================
+  coordinator:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-coordinator
+    command: >
+      python3 runners/run_ec2.py ${FL_TASK:-vfl_fraud}
+        --distributed
+    environment:
+      FL_DISTRIBUTED: "1"
+      SUPERLINK_ADDRESS: "0.0.0.0:9092"
+      SYNTHETIC: "1"
+      FL_TASK: ${FL_TASK:-vfl_fraud}
+      NUM_ROUNDS: ${NUM_ROUNDS:-5}
+      NUM_CLIENTS: ${NUM_CLIENTS:-3}
+    ports:
+      - "9092:9092"
+    volumes:
+      - coordinator-results:/app/results
+      - ./certs:/certs:ro
+    networks:
+      - vfl-network
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost',9092)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
+
+  # ================================================================
+  # Party 0 — Passive (features 0-9)
+  # ================================================================
+  party-0:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-party-0
+    command: >
+      python3 runners/run_client.py
+        --server coordinator:9092
+        --partition-id 0
+        --num-clients ${NUM_CLIENTS:-3}
+        --task ${FL_TASK:-vfl_fraud}
+    environment:
+      FL_SERVER: coordinator:9092
+      PARTITION_ID: "0"
+      NUM_CLIENTS: ${NUM_CLIENTS:-3}
+      FL_TASK: ${FL_TASK:-vfl_fraud}
+      SYNTHETIC: "1"
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - vfl-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+  # ================================================================
+  # Party 1 — Passive (features 10-19)
+  # ================================================================
+  party-1:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-party-1
+    command: >
+      python3 runners/run_client.py
+        --server coordinator:9092
+        --partition-id 1
+        --num-clients ${NUM_CLIENTS:-3}
+        --task ${FL_TASK:-vfl_fraud}
+    environment:
+      FL_SERVER: coordinator:9092
+      PARTITION_ID: "1"
+      NUM_CLIENTS: ${NUM_CLIENTS:-3}
+      FL_TASK: ${FL_TASK:-vfl_fraud}
+      SYNTHETIC: "1"
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - vfl-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+  # ================================================================
+  # Party 2 — Passive (features 20-29)
+  # ================================================================
+  party-2:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-party-2
+    command: >
+      python3 runners/run_client.py
+        --server coordinator:9092
+        --partition-id 2
+        --num-clients ${NUM_CLIENTS:-3}
+        --task ${FL_TASK:-vfl_fraud}
+    environment:
+      FL_SERVER: coordinator:9092
+      PARTITION_ID: "2"
+      NUM_CLIENTS: ${NUM_CLIENTS:-3}
+      FL_TASK: ${FL_TASK:-vfl_fraud}
+      SYNTHETIC: "1"
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - vfl-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+
+  # ================================================================
+  # PSA Service — entity alignment (pre-training)
+  # ================================================================
+  psa-service:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-psa
+    command: >
+      python3 -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, sys, os, csv
+      sys.path.insert(0, '/app')
+      from fl_pets.psa import align_entities_fuzzy, align_entities_exact
+
+      class PSAHandler(BaseHTTPRequestHandler):
+          parties_data = {}
+          def do_GET(self):
+              if self.path == '/health':
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(b'ok')
+              elif self.path == '/status':
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps({
+                      'parties_registered': list(self.parties_data.keys()),
+                      'ready': len(self.parties_data) >= 2,
+                  }).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+          def do_POST(self):
+              length = int(self.headers.get('Content-Length', 0))
+              body = json.loads(self.rfile.read(length)) if length else {}
+              if self.path == '/register':
+                  party_id = body.get('party_id')
+                  records = body.get('records', [])
+                  PSAHandler.parties_data[party_id] = records
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps({
+                      'party_id': party_id,
+                      'records': len(records),
+                      'parties_registered': len(PSAHandler.parties_data),
+                  }).encode())
+              elif self.path == '/align_exact':
+                  if len(PSAHandler.parties_data) < 2:
+                      self.send_response(400)
+                      self.end_headers()
+                      self.wfile.write(b'Need at least 2 parties')
+                      return
+                  result = align_entities_exact(PSAHandler.parties_data, salt=os.urandom(32))
+                  aligned = {k: v for k, v in result.items()}
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps(aligned).encode())
+              elif self.path == '/align_fuzzy':
+                  if len(PSAHandler.parties_data) < 2:
+                      self.send_response(400)
+                      self.end_headers()
+                      self.wfile.write(b'Need at least 2 parties')
+                      return
+                  threshold = body.get('threshold', 0.7)
+                  result = align_entities_fuzzy(PSAHandler.parties_data, threshold=threshold)
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps(result).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+          def log_message(self, format, *args): pass
+      print('PSA Service listening on :8084')
+      HTTPServer(('0.0.0.0', 8084), PSAHandler).serve_forever()
+      "
+    ports:
+      - "8084:8084"
+    networks:
+      - vfl-network
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8084/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # ================================================================
+  # DP Service — embedding/gradient noise
+  # ================================================================
+  dp-service:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-dp
+    command: >
+      python3 -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, sys
+      sys.path.insert(0, '/app')
+      from fl_pets.dp import compute_epsilon, DP_PRESETS, get_preset
+
+      class DPHandler(BaseHTTPRequestHandler):
+          cumulative_steps = 0
+          def do_GET(self):
+              if self.path == '/health':
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(b'ok')
+              elif self.path == '/presets':
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps(DP_PRESETS).encode())
+              elif self.path == '/budget':
+                  results = {}
+                  for name, cfg in DP_PRESETS.items():
+                      eps = compute_epsilon(cfg['noise_multiplier'], sample_rate=0.01, steps=max(1, self.cumulative_steps))
+                      results[name] = {'epsilon': eps, 'sigma': cfg['noise_multiplier'], 'steps': self.cumulative_steps}
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps(results).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+          def do_POST(self):
+              length = int(self.headers.get('Content-Length', 0))
+              body = json.loads(self.rfile.read(length)) if length else {}
+              if self.path == '/step':
+                  DPHandler.cumulative_steps += body.get('steps', 1)
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps({'cumulative_steps': DPHandler.cumulative_steps}).encode())
+              elif self.path == '/compute':
+                  sigma = body.get('sigma', 1.5)
+                  steps = body.get('steps', 100)
+                  sample_rate = body.get('sample_rate', 0.01)
+                  eps = compute_epsilon(sigma, sample_rate=sample_rate, steps=steps)
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps({'epsilon': eps, 'sigma': sigma, 'steps': steps}).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+          def log_message(self, format, *args): pass
+      print('DP Service listening on :8085')
+      HTTPServer(('0.0.0.0', 8085), DPHandler).serve_forever()
+      "
+    ports:
+      - "8085:8085"
+    networks:
+      - vfl-network
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8085/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # ================================================================
+  # Audit Logger — immutable exchange log
+  # ================================================================
+  audit-logger:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.gpu
+    container_name: vfl-audit
+    command: >
+      python3 -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, time, os, hashlib
+
+      LOG_DIR = '/app/audit_logs'
+      os.makedirs(LOG_DIR, exist_ok=True)
+      LOG_FILE = os.path.join(LOG_DIR, 'audit.jsonl')
+
+      class AuditHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              if self.path == '/health':
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(b'ok')
+              elif self.path == '/logs':
+                  entries = []
+                  if os.path.exists(LOG_FILE):
+                      with open(LOG_FILE) as f:
+                          for line in f:
+                              entries.append(json.loads(line))
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps(entries).encode())
+              elif self.path == '/count':
+                  count = 0
+                  if os.path.exists(LOG_FILE):
+                      with open(LOG_FILE) as f:
+                          count = sum(1 for _ in f)
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(json.dumps({'count': count}).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+          def do_POST(self):
+              if self.path == '/log':
+                  length = int(self.headers.get('Content-Length', 0))
+                  body = json.loads(self.rfile.read(length)) if length else {}
+                  entry = {
+                      'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                      'source': body.get('source', 'unknown'),
+                      'destination': body.get('destination', 'unknown'),
+                      'action': body.get('action', 'unknown'),
+                      'round': body.get('round', 0),
+                      'payload_hash': body.get('payload_hash', ''),
+                      'metadata': body.get('metadata', {}),
+                  }
+                  entry['entry_hash'] = hashlib.sha256(json.dumps(entry).encode()).hexdigest()[:16]
+                  with open(LOG_FILE, 'a') as f:
+                      f.write(json.dumps(entry) + '\n')
+                  self.send_response(201)
+                  self.end_headers()
+                  self.wfile.write(json.dumps(entry).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+          def log_message(self, format, *args): pass
+      print('Audit Logger listening on :8086')
+      HTTPServer(('0.0.0.0', 8086), AuditHandler).serve_forever()
+      "
+    ports:
+      - "8086:8086"
+    volumes:
+      - audit-logs:/app/audit_logs
+    networks:
+      - vfl-network
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # ================================================================
+  # Prometheus — metrics
+  # ================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vfl-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - vfl-network
+    restart: unless-stopped
+
+  # ================================================================
+  # Grafana — dashboards
+  # ================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: vfl-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    networks:
+      - vfl-network
+    restart: unless-stopped
+
+volumes:
+  coordinator-results:
+  audit-logs:
+
+networks:
+  vfl-network:
+    driver: bridge
