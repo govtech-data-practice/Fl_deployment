@@ -81,6 +81,10 @@ options.backend.client-resources.num-gpus = 0.0
 address = "127.0.0.1:9093"
 insecure = true
 
+[tool.flwr.federations.default]
+address = "127.0.0.1:9093"
+insecure = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
