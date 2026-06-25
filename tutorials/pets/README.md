@@ -15,8 +15,7 @@ These are tool-level guides — for the theory and FL integration, see the [main
 | Private Set Alignment | [PSA: Entity Alignment](psa-entity-alignment.ipynb) | anonlink + clkhash (Data61) | `pip install anonlink clkhash` |
 | Differential Privacy | [DP: Gradient Privacy](dp-gradient-privacy.ipynb) | Opacus (Meta) | `pip install opacus` |
 | Secure Aggregation | [SecAgg: Update Masking](secagg-update-masking.ipynb) | Flower SecAgg+ | `pip install flwr` |
-| Homomorphic Encryption | [HE: Encrypted Inference](he-encrypted-inference.ipynb) | TenSEAL (OpenMined) | `pip install tenseal` |
-| Multi-Party Computation | [MPC: Secure Inference](mpc-secure-inference.ipynb) | CrypTen (Meta) | `pip install crypten` |
+| Secure Inference | [HE vs MPC Comparison](secure-inference.ipynb) | TenSEAL + CrypTen | `pip install tenseal` |
 
 ## PET Lifecycle
 

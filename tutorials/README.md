@@ -58,8 +58,7 @@ Open in Jupyter: `jupyter notebook tutorials/pets/`
 | Private Set Alignment | [PSA: Entity Alignment](pets/psa-entity-alignment.ipynb) | anonlink + clkhash (Data61) |
 | Differential Privacy | [DP: Gradient Privacy](pets/dp-gradient-privacy.ipynb) | Opacus (Meta) |
 | Secure Aggregation | [SecAgg: Update Masking](pets/secagg-update-masking.ipynb) | Flower SecAgg+ |
-| Homomorphic Encryption | [HE: Encrypted Inference](pets/he-encrypted-inference.ipynb) | TenSEAL (OpenMined) |
-| Multi-Party Computation | [MPC: Secure Inference](pets/mpc-secure-inference.ipynb) | CrypTen (Meta) |
+| Secure Inference | [HE vs MPC Comparison](pets/secure-inference.ipynb) | TenSEAL + CrypTen |
 
 ## All-Paradigms Demo
 
