@@ -1,6 +1,11 @@
 # FL Reference Implementation
 
-Federated Learning reference implementation with Privacy-Enhancing Technologies (PETs) for cross-silo deployment on AWS/GCC.
+Federated Learning reference implementation with Privacy-Enhancing Technologies (PETs) for cross-silo deployment on AWS/GCC, built on [Flower](https://flower.ai/).
+
+This repo provides two things:
+
+1. **Tutorials** — hands-on Jupyter notebooks (beginner to advanced) covering FL paradigms, privacy controls, secure inference, and distributed deployment
+2. **PET adapter code** (`fl_pets/`) — production-ready modules that plug PETs (DP, SecAgg, PSA, HE, MPC) into a Flower FL pipeline without modifying the core training logic
 
 Key capabilities:
 
