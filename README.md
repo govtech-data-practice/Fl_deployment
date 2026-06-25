@@ -2,10 +2,6 @@
 
 Federated Learning reference implementation with Privacy-Enhancing Technologies (PETs) for cross-silo deployment on AWS/GCC.
 
-## Overview
-
-This repository provides a working implementation of cross-silo federated learning, designed as a companion to the [FL Deployment Guide](tutorials/advanced/08-distributed-deployment.md). It demonstrates how organisations can train shared models across institutional boundaries **without moving raw data**.
-
 Key capabilities:
 
 - **Horizontal FL** — same features, different samples across sites
