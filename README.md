@@ -102,12 +102,25 @@ The repo includes real and synthetic datasets. See [data/README.md](data/README.
 
 FedAvg, FedProx, SCAFFOLD, FedAdam, FedYogi, SecAgg+, DP-Central, DP-Local, OneOwner
 
-## Privacy Controls
+## PET Toolkit (`fl_pets/`)
 
-- **Differential Privacy**: DP-SGD with Renyi DP (RDP) accounting. Presets: `DP_STRONG`, `DP_MODERATE`, `DP_RELAXED`
-- **Secure Aggregation**: Pairwise masking (Flower SecAgg+)
-- **Private Set Alignment**: CLK Bloom filter fuzzy matching (anonlink + clkhash) for entity alignment
-- **Privacy Attack Testing**: Membership inference (MIA), gradient leakage (DLG), model inversion, canary insertion
+Privacy-Enhancing Technologies organised by FL lifecycle stage:
+
+| Stage | PET | Library | What it does |
+|-------|-----|---------|-------------|
+| **Pre-training** | [PSA](tutorials/pets/psa-entity-alignment.ipynb) | anonlink + clkhash (Data61) | Fuzzy entity alignment across parties without revealing raw data |
+| **During training** | [DP](tutorials/pets/dp-gradient-privacy.ipynb) | Opacus (Meta) | Per-sample gradient clipping + noise (DP-SGD with RDP accounting) |
+| **During training** | [SecAgg](tutorials/pets/secagg-update-masking.ipynb) | Flower SecAgg+ | Pairwise masking so server only sees aggregate updates |
+| **Inference** | [HE vs MPC](tutorials/pets/secure-inference.ipynb) | TenSEAL + CrypTen | Encrypted inference comparison: polynomial approx vs secret sharing |
+| **Post-training** | Privacy Attacks | Custom suite | MIA, gradient leakage (DLG), model inversion, canary insertion |
+
+```
+Pre-training       During training        Inference          Post-training
++---------+        +----+  +------+       +----+  +-----+    +---------+
+|  PSA    |  --->  | DP |  |SecAgg| --->  | HE |  | MPC | -> | Privacy |
+| (align) |        |(noise) (mask)|       |(enc)  (split)|   | attacks |
++---------+        +----+  +------+       +----+  +-----+    +---------+
+```
 
 ## Tutorials
 
