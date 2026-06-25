@@ -67,15 +67,6 @@ publisher = "govtech"
 serverapp = "runners.server_app:app"
 clientapp = "runners.client_app:app"
 
-[tool.flwr.app.config]
-task = "fraud"
-num-rounds = 10
-num-clients = 2
-
-[tool.flwr.federations.default]
-address = "127.0.0.1:9093"
-insecure = true
-
 [tool.ruff]
 line-length = 120
 target-version = "py310"
