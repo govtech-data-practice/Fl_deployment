@@ -1,16 +1,15 @@
-# SuperLink — runs on FL_deployment server
-# Usage: docker compose -f docker-compose.superlink.yml up -d
+# SuperLink + ServerApp — runs on coordinator EC2
+#
+# Usage:
+#   FL_TASK=fraud NUM_ROUNDS=10 docker compose -f docker-compose.superlink.yml up -d
+#   docker compose -f docker-compose.superlink.yml logs -f superlink
 
 services:
   superlink:
     image: healthcare-fl:latest
     container_name: fl-superlink
     restart: unless-stopped
-    command: >
-      flower-superlink
-        --ssl-certfile /certs/server.pem
-        --ssl-keyfile /certs/server.key
-        --ssl-ca-certfile /certs/ca.pem
+    command: flower-superlink --insecure
     ports:
       - "9091:9091"
       - "9092:9092"
@@ -18,9 +17,38 @@ services:
     volumes:
       - ./certs:/certs:ro
       - ./logs/superlink:/app/logs
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',9092)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "5"
-        tag: "superlink"
+
+  serverapp:
+    image: healthcare-fl:latest
+    container_name: fl-serverapp
+    command: >
+      flwr run . server
+        --app runners.server_app:app
+        --insecure
+        --superlink superlink:9092
+    environment:
+      FL_TASK: ${FL_TASK:-fraud}
+      NUM_ROUNDS: ${NUM_ROUNDS:-10}
+      NUM_CLIENTS: ${NUM_CLIENTS:-2}
+      SYNTHETIC: ${SYNTHETIC:-1}
+    depends_on:
+      superlink:
+        condition: service_healthy
+    volumes:
+      - ./results:/app/results
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"

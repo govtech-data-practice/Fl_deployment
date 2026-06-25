@@ -1,6 +1,7 @@
-# SuperNode — runs on each client machine
+# SuperNode + ClientApp — runs on each client EC2
+#
 # Usage:
-#   PARTITION_ID=0 NUM_CLIENTS=5 SUPERLINK_IP=172.31.x.x \
+#   SUPERLINK_IP=172.31.x.x PARTITION_ID=0 NUM_CLIENTS=2 FL_TASK=fraud \
 #     docker compose -f docker-compose.supernode.yml up -d
 
 services:
@@ -10,14 +11,19 @@ services:
     restart: unless-stopped
     command: >
       flower-supernode
-        --root-certificates /certs/ca.pem
+        --insecure
         --superlink ${SUPERLINK_IP}:9092
-        --node-config "partition-id=${PARTITION_ID} num-clients=${NUM_CLIENTS} max-samples=${MAX_SAMPLES:-0}"
         --clientappio-api-address 0.0.0.0:7070
+        --node-config "partition-id=${PARTITION_ID:-0} num-clients=${NUM_CLIENTS:-2} task=${FL_TASK:-fraud}"
     environment:
-      - DATA_PATH=/data/flower_data
-      - MAX_SAMPLES=${MAX_SAMPLES:-0}
-      - PYTHONUNBUFFERED=1
+      FL_TASK: ${FL_TASK:-fraud}
+      PARTITION_ID: ${PARTITION_ID:-0}
+      NUM_CLIENTS: ${NUM_CLIENTS:-2}
+      SYNTHETIC: ${SYNTHETIC:-1}
+      DATA_PATH: /data
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "7070:7070"
     volumes:
       - ./certs:/certs:ro
       - ./data:/data:ro
@@ -34,4 +40,24 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-        tag: "supernode-${PARTITION_ID}"
+
+  clientapp:
+    image: healthcare-fl:latest
+    container_name: fl-clientapp
+    command: >
+      flwr run . client
+        --app runners.client_app:app
+        --insecure
+        --supernode supernode:7070
+    environment:
+      FL_TASK: ${FL_TASK:-fraud}
+      PARTITION_ID: ${PARTITION_ID:-0}
+      NUM_CLIENTS: ${NUM_CLIENTS:-2}
+      SYNTHETIC: ${SYNTHETIC:-1}
+    depends_on:
+      - supernode
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
