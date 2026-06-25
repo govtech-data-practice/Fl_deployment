@@ -72,15 +72,6 @@ task = "fraud"
 num-rounds = 10
 num-clients = 2
 
-[tool.flwr.federations.local-sim]
-options.num-supernodes = 2
-options.backend.client-resources.num-cpus = 2
-options.backend.client-resources.num-gpus = 0.0
-
-[tool.flwr.federations.distributed]
-address = "127.0.0.1:9093"
-insecure = true
-
 [tool.flwr.federations.default]
 address = "127.0.0.1:9093"
 insecure = true
