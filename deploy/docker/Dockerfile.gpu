@@ -33,6 +33,7 @@ COPY fl_pets/ /app/fl_pets/
 COPY tools/ /app/tools/
 COPY runners/ /app/runners/
 COPY tests/ /app/tests/
+COPY pyproject.toml /app/pyproject.toml
 
 # List available models and scenarios at build time
 RUN echo "Models: bilstm, mlp, densenet, mistral, vfl_mlp, split_bilstm" && \
