@@ -98,6 +98,20 @@ The repo includes real and synthetic datasets. See [data/README.md](data/README.
 | Split BiLSTM | 500K | Split learning |
 | Mistral 7B QLoRA | 7B (160MB adapter) | Clinical NLP |
 
+## CLI Tools
+
+| Tool | Command | Purpose |
+|------|---------|---------|
+| **FL Server** | `python runners/run_ec2.py fraud --synthetic` | Run FL training (simulation or distributed) |
+| **FL Client** | `python runners/run_client.py --server host:9092` | Connect to a distributed FL coordinator |
+| **Data Ingest** | `python tools/ingest.py --task sepsis --input data.csv` | Ingest and validate participant data |
+| **DP Budget** | `python tools/dp_budget.py --all --rounds 100` | Calculate privacy budget (epsilon) for all presets |
+| **Manifest Validator** | `python tools/validate_manifest.py manifest.json` | Validate data manifest against task requirements |
+| **Data Generator** | `python data/generators/generate_all.py --task fraud` | Generate synthetic sample data for any task |
+| **SG Synthetic** | `from data.generators.sg_synthetic import generate_records` | Generate Singapore patient data for PSA testing |
+| **Benchmark** | `python tests/benchmarks/run_benchmarks.py --tasks fraud` | Run centralised vs FL accuracy comparison |
+| **Test Suite** | `python tests/run_tests.py fraud` | Run strategy validation tests |
+
 ## FL Strategies
 
 FedAvg, FedProx, SCAFFOLD, FedAdam, FedYogi, SecAgg+, DP-Central, DP-Local, OneOwner
