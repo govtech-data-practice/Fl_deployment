@@ -22,9 +22,10 @@ RUN pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cu124
 
 # PSA dependencies (need g++ for anonlink C extension, installed separately for flwr compat)
+# PSA dependencies (need g++ for anonlink C extension, installed separately for flwr compat)
 RUN apt-get update && apt-get install -y --no-install-recommends g++ && \
     pip install --no-cache-dir --no-deps anonlink==0.15.3 clkhash==0.18.3 && \
-    pip install --no-cache-dir bitarray && \
+    pip install --no-cache-dir bitarray mypy_extensions && \
     apt-get purge -y g++ && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
