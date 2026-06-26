@@ -15,9 +15,7 @@ version: "3.8"
 
 services:
   coordinator:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
+    image: healthcare-fl:latest
     container_name: fl-coordinator
     environment:
       - FL_DISTRIBUTED=1
@@ -44,9 +42,7 @@ services:
       retries: 3
 
   client_0:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
+    image: healthcare-fl:latest
     container_name: fl-client-0
     environment:
       - FL_SERVER=coordinator:9092
@@ -72,9 +68,7 @@ services:
           memory: 4G
 
   client_1:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
+    image: healthcare-fl:latest
     container_name: fl-client-1
     environment:
       - FL_SERVER=coordinator:9092

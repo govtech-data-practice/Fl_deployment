@@ -21,9 +21,7 @@ services:
   # Coordinator — Flower SuperLink + FL strategy execution
   # ================================================================
   coordinator:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: fl-coordinator
     command: >
       python3 runners/run_ec2.py ${FL_TASK:-fraud}
@@ -59,9 +57,7 @@ services:
   # Client 0 — FL SuperNode (partition 0)
   # ================================================================
   client-0:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: fl-client-0
     command: >
       python3 runners/run_client.py
@@ -90,9 +86,7 @@ services:
   # Client 1 — FL SuperNode (partition 1)
   # ================================================================
   client-1:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: fl-client-1
     command: >
       python3 runners/run_client.py
@@ -121,9 +115,7 @@ services:
   # DP Accountant — privacy budget tracking
   # ================================================================
   dp-accountant:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: fl-dp-accountant
     command: >
       python3 -c "
@@ -180,9 +172,7 @@ services:
   # Model Registry — versioned model storage
   # ================================================================
   model-registry:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: fl-model-registry
     command: >
       python3 -c "

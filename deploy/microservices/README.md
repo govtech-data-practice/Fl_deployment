@@ -13,6 +13,9 @@ Docker Compose configurations for FL microservices architecture.
 ## Quick Start
 
 ```bash
+# Build the image first (from repo root)
+docker build -t healthcare-fl:latest -f deploy/docker/Dockerfile.gpu .
+
 cd deploy/microservices
 
 # Basic HFL (3 containers)

@@ -21,9 +21,7 @@ services:
   # Coordinator — VFL top model + labels (active party)
   # ================================================================
   coordinator:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-coordinator
     command: >
       python3 runners/run_ec2.py ${FL_TASK:-vfl_fraud}
@@ -59,9 +57,7 @@ services:
   # Party 0 — Passive (features 0-9)
   # ================================================================
   party-0:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-party-0
     command: >
       python3 runners/run_client.py
@@ -90,9 +86,7 @@ services:
   # Party 1 — Passive (features 10-19)
   # ================================================================
   party-1:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-party-1
     command: >
       python3 runners/run_client.py
@@ -121,9 +115,7 @@ services:
   # Party 2 — Passive (features 20-29)
   # ================================================================
   party-2:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-party-2
     command: >
       python3 runners/run_client.py
@@ -152,9 +144,7 @@ services:
   # PSA Service — entity alignment (pre-training)
   # ================================================================
   psa-service:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-psa
     command: >
       python3 -c "
@@ -238,9 +228,7 @@ services:
   # DP Service — embedding/gradient noise
   # ================================================================
   dp-service:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-dp
     command: >
       python3 -c "
@@ -309,9 +297,7 @@ services:
   # Audit Logger — immutable exchange log
   # ================================================================
   audit-logger:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.gpu
+    image: healthcare-fl:latest
     container_name: vfl-audit
     command: >
       python3 -c "

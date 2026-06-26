@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir \
     pillow==12.2.0 \
     PyYAML==6.0.3 \
     tenseal==0.3.16 \
+    opacus==1.6.0 \
+    anonlink==0.15.3 \
+    clkhash==0.18.3 \
     transformers \
     peft \
     accelerate \
