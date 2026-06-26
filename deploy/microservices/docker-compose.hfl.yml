@@ -2,33 +2,20 @@
 # ========================================
 # Coordinator + N clients + DP Accountant + Model Registry + Monitoring
 #
+# Prerequisites:
+#   docker build -t healthcare-fl:latest -f deploy/docker/Dockerfile.gpu .
+#
 # Usage:
 #   docker compose -f docker-compose.hfl.yml up -d
-#   docker compose -f docker-compose.hfl.yml logs -f coordinator
 #   FL_TASK=sepsis NUM_CLIENTS=3 docker compose -f docker-compose.hfl.yml up -d
-#
-# Ports:
-#   9092  — Coordinator gRPC (Flower)
-#   8080  — REST Gateway
-#   8081  — DP Accountant
-#   8083  — Model Registry
-#   9090  — Prometheus
-#   3000  — Grafana
 
 services:
 
-  # ================================================================
-  # Coordinator — Flower SuperLink + FL strategy execution
-  # ================================================================
   coordinator:
     image: healthcare-fl:latest
     container_name: fl-coordinator
-    command: >
-      python3 runners/run_ec2.py ${FL_TASK:-fraud}
-        --distributed
+    command: python3 runners/run_ec2.py ${FL_TASK:-fraud} --synthetic
     environment:
-      FL_DISTRIBUTED: "1"
-      SUPERLINK_ADDRESS: "0.0.0.0:9092"
       SYNTHETIC: "1"
       FL_TASK: ${FL_TASK:-fraud}
       NUM_ROUNDS: ${NUM_ROUNDS:-5}
@@ -37,7 +24,6 @@ services:
       - "9092:9092"
     volumes:
       - coordinator-results:/app/results
-      - ./certs:/certs:ro
     networks:
       - fl-network
     healthcheck:
@@ -53,110 +39,38 @@ services:
           cpus: "4"
           memory: 8G
 
-  # ================================================================
-  # Client 0 — FL SuperNode (partition 0)
-  # ================================================================
   client-0:
     image: healthcare-fl:latest
     container_name: fl-client-0
-    command: >
-      python3 runners/run_client.py
-        --server coordinator:9092
-        --partition-id 0
-        --num-clients ${NUM_CLIENTS:-2}
-        --task ${FL_TASK:-fraud}
+    command: python3 runners/run_client.py --server coordinator:9092 --partition-id 0 --num-clients ${NUM_CLIENTS:-2} --task ${FL_TASK:-fraud}
     environment:
-      FL_SERVER: coordinator:9092
-      PARTITION_ID: "0"
-      NUM_CLIENTS: ${NUM_CLIENTS:-2}
-      FL_TASK: ${FL_TASK:-fraud}
       SYNTHETIC: "1"
+      FL_TASK: ${FL_TASK:-fraud}
     depends_on:
       coordinator:
         condition: service_healthy
     networks:
       - fl-network
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 4G
 
-  # ================================================================
-  # Client 1 — FL SuperNode (partition 1)
-  # ================================================================
   client-1:
     image: healthcare-fl:latest
     container_name: fl-client-1
-    command: >
-      python3 runners/run_client.py
-        --server coordinator:9092
-        --partition-id 1
-        --num-clients ${NUM_CLIENTS:-2}
-        --task ${FL_TASK:-fraud}
+    command: python3 runners/run_client.py --server coordinator:9092 --partition-id 1 --num-clients ${NUM_CLIENTS:-2} --task ${FL_TASK:-fraud}
     environment:
-      FL_SERVER: coordinator:9092
-      PARTITION_ID: "1"
-      NUM_CLIENTS: ${NUM_CLIENTS:-2}
-      FL_TASK: ${FL_TASK:-fraud}
       SYNTHETIC: "1"
+      FL_TASK: ${FL_TASK:-fraud}
     depends_on:
       coordinator:
         condition: service_healthy
     networks:
       - fl-network
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 4G
 
-  # ================================================================
-  # DP Accountant — privacy budget tracking
-  # ================================================================
   dp-accountant:
     image: healthcare-fl:latest
     container_name: fl-dp-accountant
-    command: >
-      python3 -c "
-      from http.server import HTTPServer, BaseHTTPRequestHandler
-      import json, sys
-      sys.path.insert(0, '/app')
-      from fl_pets.dp import compute_epsilon, DP_PRESETS
-
-      class DPHandler(BaseHTTPRequestHandler):
-          cumulative_steps = 0
-          def do_GET(self):
-              if self.path == '/health':
-                  self.send_response(200)
-                  self.end_headers()
-                  self.wfile.write(b'ok')
-              elif self.path == '/budget':
-                  results = {}
-                  for name, cfg in DP_PRESETS.items():
-                      eps = compute_epsilon(cfg['noise_multiplier'], sample_rate=0.01, steps=max(1, self.cumulative_steps))
-                      results[name] = {'epsilon': eps, 'steps': self.cumulative_steps}
-                  self.send_response(200)
-                  self.end_headers()
-                  self.wfile.write(json.dumps(results).encode())
-              else:
-                  self.send_response(404)
-                  self.end_headers()
-          def do_POST(self):
-              if self.path == '/step':
-                  length = int(self.headers.get('Content-Length', 0))
-                  body = json.loads(self.rfile.read(length)) if length else {}
-                  DPHandler.cumulative_steps += body.get('steps', 1)
-                  self.send_response(200)
-                  self.end_headers()
-                  self.wfile.write(json.dumps({'cumulative_steps': DPHandler.cumulative_steps}).encode())
-              else:
-                  self.send_response(404)
-                  self.end_headers()
-          def log_message(self, format, *args): pass
-      print('DP Accountant listening on :8081')
-      HTTPServer(('0.0.0.0', 8081), DPHandler).serve_forever()
-      "
+    command: python3 runners/svc_dp.py
+    environment:
+      PORT: "8081"
     ports:
       - "8081:8081"
     networks:
@@ -168,61 +82,16 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # ================================================================
-  # Model Registry — versioned model storage
-  # ================================================================
   model-registry:
     image: healthcare-fl:latest
     container_name: fl-model-registry
-    command: >
-      python3 -c "
-      from http.server import HTTPServer, BaseHTTPRequestHandler
-      import json, os, hashlib, time
-
-      MODELS_DIR = '/app/models_store'
-      os.makedirs(MODELS_DIR, exist_ok=True)
-
-      class ModelHandler(BaseHTTPRequestHandler):
-          def do_GET(self):
-              if self.path == '/health':
-                  self.send_response(200)
-                  self.end_headers()
-                  self.wfile.write(b'ok')
-              elif self.path == '/models':
-                  models = []
-                  for f in sorted(os.listdir(MODELS_DIR)):
-                      if f.endswith('.json'):
-                          with open(os.path.join(MODELS_DIR, f)) as fh:
-                              models.append(json.load(fh))
-                  self.send_response(200)
-                  self.end_headers()
-                  self.wfile.write(json.dumps(models).encode())
-              else:
-                  self.send_response(404)
-                  self.end_headers()
-          def do_POST(self):
-              if self.path == '/models':
-                  length = int(self.headers.get('Content-Length', 0))
-                  body = json.loads(self.rfile.read(length)) if length else {}
-                  body['timestamp'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
-                  body['id'] = hashlib.sha256(json.dumps(body).encode()).hexdigest()[:12]
-                  path = os.path.join(MODELS_DIR, f'{body[\"id\"]}.json')
-                  with open(path, 'w') as f:
-                      json.dump(body, f)
-                  self.send_response(201)
-                  self.end_headers()
-                  self.wfile.write(json.dumps(body).encode())
-              else:
-                  self.send_response(404)
-                  self.end_headers()
-          def log_message(self, format, *args): pass
-      print('Model Registry listening on :8083')
-      HTTPServer(('0.0.0.0', 8083), ModelHandler).serve_forever()
-      "
+    command: python3 runners/svc_model_registry.py
+    environment:
+      PORT: "8083"
     ports:
       - "8083:8083"
     volumes:
-      - model-store:/app/models_store
+      - model-store:/tmp/models
     networks:
       - fl-network
     healthcheck:
@@ -232,9 +101,6 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # ================================================================
-  # Prometheus — metrics collection
-  # ================================================================
   prometheus:
     image: prom/prometheus:latest
     container_name: fl-prometheus
@@ -246,9 +112,6 @@ services:
       - fl-network
     restart: unless-stopped
 
-  # ================================================================
-  # Grafana — dashboards
-  # ================================================================
   grafana:
     image: grafana/grafana:latest
     container_name: fl-grafana
