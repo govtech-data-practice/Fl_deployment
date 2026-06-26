@@ -76,7 +76,7 @@ services:
     networks:
       - fl-network
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:8081/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -95,7 +95,7 @@ services:
     networks:
       - fl-network
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:8083/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8083/health')"]
       interval: 10s
       timeout: 3s
       retries: 3

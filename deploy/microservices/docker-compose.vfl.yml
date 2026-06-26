@@ -87,7 +87,7 @@ services:
     networks:
       - vfl-network
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:8084/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -104,7 +104,7 @@ services:
     networks:
       - vfl-network
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:8085/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8085/health')"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -123,7 +123,7 @@ services:
     networks:
       - vfl-network
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:8086/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8086/health')"]
       interval: 10s
       timeout: 3s
       retries: 3

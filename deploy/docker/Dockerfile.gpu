@@ -41,6 +41,7 @@ COPY fl_pets/ /app/fl_pets/
 COPY tools/ /app/tools/
 COPY runners/ /app/runners/
 COPY tests/ /app/tests/
+COPY data/generators/ /app/data/generators/
 COPY pyproject.toml /app/pyproject.toml
 
 # List available models and scenarios at build time
