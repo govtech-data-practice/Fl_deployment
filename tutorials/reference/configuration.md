@@ -109,7 +109,7 @@ python tools/dp_budget.py --all --rounds 100
 
 ### Secure Aggregation
 
-See `secagg/config.yaml` for all SecAgg parameters.
+SecAgg is configured via the `fl_pets/secagg.py` Python API.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
