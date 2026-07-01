@@ -2,7 +2,7 @@
 
 Federated Learning reference implementation with Privacy-Enhancing Technologies (PETs) for cross-silo deployment on AWS/GCC, built on [Flower](https://flower.ai/).
 
-This repo provides two things:
+This repo provides:
 
 1. **Tutorials** — hands-on Jupyter notebooks (beginner to advanced) covering FL paradigms, privacy controls, secure inference, and distributed deployment
 2. **PET adapter code** (`fl_pets/`) — production-ready modules that plug PETs (DP, SecAgg, PSA, HE, MPC) into a Flower FL pipeline without modifying the core training logic
@@ -125,7 +125,7 @@ Privacy-Enhancing Technologies organised by FL lifecycle stage:
 
 | Stage | PET | Library | What it does |
 |-------|-----|---------|-------------|
-| **Pre-training** | [PSA](tutorials/pets/psa-entity-alignment.ipynb) | anonlink + clkhash (Data61) | Fuzzy entity alignment across parties without revealing raw data |
+| **Pre-training** | [PSA](tutorials/pets/psa-entity-alignment.ipynb) | anonlink + clkhash (Data61) | Fuzzy entity alignment via CLK Bloom filters — matches records across parties even with typos, romanisation differences, and no shared IDs |
 | **During training** | [DP](tutorials/pets/dp-gradient-privacy.ipynb) | Opacus (Meta) | Per-sample gradient clipping + noise (DP-SGD with RDP accounting) |
 | **During training** | [SecAgg](tutorials/pets/secagg-update-masking.ipynb) | Flower SecAgg+ | Pairwise masking so server only sees aggregate updates |
 | **Inference** | [HE vs MPC](tutorials/pets/secure-inference.ipynb) | TenSEAL + CrypTen | Encrypted inference comparison: polynomial approx vs secret sharing |
@@ -138,6 +138,20 @@ Pre-training       During training        Inference          Post-training
 | (align) |        |(noise) (mask)|       |(enc)  (split)|   | attacks |
 +---------+        +----+  +------+       +----+  +-----+    +---------+
 ```
+
+### PSA: Private Set Alignment
+
+Traditional PSI (Private Set Intersection) requires exact shared identifiers — which fails when hospitals use different patient ID systems, names have typos, or romanisation differs across records. PSA uses **CLK Bloom filter encoding** ([anonlink](https://github.com/data61/anonlink), CSIRO Data61) for fuzzy matching on quasi-identifiers (name, DOB, address, gender).
+
+**Double PSA triangulation** runs two independent passes (identity + location) and intersects the results, eliminating false positives from common names:
+
+| Method | Correct | False Positives | Precision | Recall |
+|--------|---------|-----------------|-----------|--------|
+| Exact PSI | 197/10,000 | 0 | 1.000 | 0.020 |
+| Single PSA @0.7 | 9,998/10,000 | 2,125 | 0.825 | 1.000 |
+| **Double PSA (triangulated)** | **9,441/10,000** | **12** | **0.999** | **0.944** |
+
+Tested on 10,000 synthetic Singaporean patient records with multi-ethnic names (Chinese romanisation, Malay bin/bte/binti, Indian s/o/d/o, Eurasian) and HDB address formatting variants. See [PSA tutorial](tutorials/pets/psa-entity-alignment.ipynb).
 
 ## Tutorials
 
