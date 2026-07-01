@@ -151,7 +151,19 @@ Traditional PSI (Private Set Intersection) requires exact shared identifiers —
 | Single PSA @0.7 | 9,998/10,000 | 2,125 | 0.825 | 1.000 |
 | **Double PSA (triangulated)** | **9,441/10,000** | **12** | **0.999** | **0.944** |
 
-Tested on 10,000 synthetic Singaporean patient records with multi-ethnic names (Chinese romanisation, Malay bin/bte/binti, Indian s/o/d/o, Eurasian) and HDB address formatting variants. See [PSA tutorial](tutorials/pets/psa-entity-alignment.ipynb).
+Tested on 10,000 synthetic Singaporean patient records with real-world noise:
+
+| Hospital A (SGH) | Hospital B (TTSH) | Noise type |
+|-------------------|-------------------|------------|
+| Tan Ah **Kow** | Tan Ah **Kou** | Chinese romanisation |
+| Lim Mei **Ling** | Lim Mei**-Ling** | Hyphenation |
+| **Muhammad** Faizal **bin** Abdullah | **Mohd** Faizal **b** Abdullah | Malay abbreviation |
+| Rajesh Kumar **s/o** Muthu | Rajesh Kumar **S/O** Muthu | Indian patronymic format |
+| **Kavitha** Devi d/o Krishnan | **Kavita** Devi d/o Krishnan | Name variant |
+| Daniel **De** Souza | Daniel **de** Souza | Case difference |
+| Blk 123 Ang Mo Kio **Ave** 6 | **BLK** 123 Ang Mo Kio **Avenue** 6 | Address formatting |
+
+See [PSA tutorial](tutorials/pets/psa-entity-alignment.ipynb) for the full theory, code, and double PSA triangulation workflow.
 
 ## Tutorials
 
